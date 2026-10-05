@@ -103,7 +103,7 @@ public final class AgentManager {
 	 * (Foreman order), not on the history of this session. Agents that change slot walk there.
 	 */
 	void onSnapshot() {
-		assigner.clear();
+		if (!Foreman.isT3()) assigner.clear();
 		awaitingRevision = -1;
 	}
 
@@ -177,10 +177,11 @@ public final class AgentManager {
 				e.setSkin(AgentSkins.get(a.id(), a.skin()));
 			}
 			AgentView v = e.view();
-			v.update(a, stale, awaiting.get(a.id()), awaitingCounts.getOrDefault(a.id(), 0));
+			boolean agentStale = stale || Foreman.isT3() && dev.agentcraft.client.foreman.T3Projection.agentOffline(a.id());
+			v.update(a, agentStale, awaiting.get(a.id()), awaitingCounts.getOrDefault(a.id(), 0));
 			v.station = StationAssigner.stationKey(a);
 			v.anchor = target.name();
-			if (playerFeet != null && !stale && followsPlayer(a)) {
+			if (playerFeet != null && !agentStale && followsPlayer(a)) {
 				Anchor near = userSpot(a.id(), e, playerFeet, waitingIndex++, waitingCount, pf);
 				if (near != null) {
 					target = near;
@@ -193,7 +194,7 @@ public final class AgentManager {
 			if (relayout) {
 				e.life().setSeat(seat);
 				place(e, effective);
-			} else if (!stale) {
+			} else if (!agentStale) {
 				retarget(lvl, layout, e, effective, seat);
 			}
 		}

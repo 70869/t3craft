@@ -43,8 +43,14 @@ public final class DiffFeature {
 
 	public static void init() {
 		BlockEntityRenderers.register(ModBlockEntities.MERGE_STATION, ctx -> new MergeStationRenderer());
-		DevBridge.registerScreen("diff", mc -> new DiffScreen(defaultTarget()));
+		DevBridge.registerScreen("diff", mc -> dev.agentcraft.client.t3.T3CraftClient.get().studioScreen("reviews",null));
 		StationInteractions.onUse(ModBlocks.MERGE_STATION, (player, pos, state, be) -> {
+			if (Foreman.isT3()) {
+				var client=dev.agentcraft.client.t3.T3CraftClient.get(); var reviews=client.readyReviews();
+				int index=MergeStationRenderer.rowIndex(player.level(),pos,state);
+				if(index<reviews.size()) client.openReview(reviews.get(index).id()); else client.openReviews();
+				return;
+			}
 			List<Decision> queue = MergeStationRenderer.queue();
 			int k = MergeStationRenderer.rowIndex(player.level(), pos, state);
 			DiffScreen.Target t = k < queue.size() ? forDecision(queue.get(k)) : defaultTarget();
@@ -56,7 +62,7 @@ public final class DiffFeature {
 	// ------------------------------------------------------------------ targets
 
 	public static void open(DiffScreen.Target target) {
-		Minecraft.getInstance().gui.setScreen(new DiffScreen(target));
+		dev.agentcraft.client.t3.T3CraftClient.get().openReviews();
 	}
 
 	public static DiffScreen.Target forDecision(Decision d) {

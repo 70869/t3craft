@@ -98,12 +98,18 @@ public final class TaskWallFeature {
 			Minecraft mc = Minecraft.getInstance();
 			HitResult hr = mc.hitResult;
 			Vec3 hit = hr instanceof BlockHitResult bh && hr.getType() == HitResult.Type.BLOCK ? bh.getLocation() : Vec3.atCenterOf(pos);
+			BlockPos origin=PanelBlock.origin(player.level(),pos,state);
+			TaskBoard board=BOARDS.get(origin);
+			if (board!=null && board.ppb>0) {
+				float[] p=toBoard(origin,state.getValue(PanelBlock.FACING),board.panelH,board.ppb,hit);
+				if (board.pageAt(p[0],p[1])) return;
+			}
 			String id = taskAt(pos, state, hit);
 			if (id != null) {
-				mc.gui.setScreen(new TaskScreen(id));
-			}
+				dev.agentcraft.client.t3.T3CraftClient.get().openTask(id);
+			} else dev.agentcraft.client.t3.T3CraftClient.get().openBoard();
 		});
-		DevBridge.registerScreen("task", mc -> new TaskScreen(defaultTask()));
+		DevBridge.registerScreen("task", mc -> dev.agentcraft.client.t3.T3CraftClient.get().studioScreen("task",defaultTask()));
 		DevBridge.register("dev.taskwall", 10_000, "{open?: taskId, press?: button, aim?: taskId, board?: \"x y z\" origin, lightFloor?: 0-15, ppb?: 0-256, relayout?} "
 				+ "-> task wall boards/cards; opens/presses/aims; lightFloor/ppb override the light floor / density (0 = auto); relayout re-plans",
 			(req, mc) -> {
@@ -111,6 +117,8 @@ public final class TaskWallFeature {
 				String open = f.optStr("open", null);
 				String press = f.optStr("press", null);
 				String aim = f.optStr("aim", null);
+				String aimPage = f.optStr("aimPage", null);
+				boolean previousPage = f.optBool("previousPage", false);
 				String onBoard = f.optStr("board", null);
 				int floor = f.optInt("lightFloor", -1, -1, 15);
 				int ppb = f.optInt("ppb", -1, -1, 256);
@@ -133,7 +141,7 @@ public final class TaskWallFeature {
 							throw new DevBridge.DevException("no task " + open);
 						}
 						selected = open;
-						mc.gui.setScreen(new TaskScreen(open));
+						dev.agentcraft.client.t3.T3CraftClient.get().openTask(open);
 					}
 					if (press != null) {
 						if (!(mc.gui.screen() instanceof TaskScreen ts)) {
@@ -145,6 +153,7 @@ public final class TaskWallFeature {
 					if (aim != null) {
 						o.add("aim", aimJson(mc, aim, onBoard));
 					}
+					if (aimPage!=null) o.add("aim",aimPageJson(mc,aimPage,previousPage,onBoard));
 					o.add("boards", boardsJson());
 					return o;
 				});
@@ -198,7 +207,8 @@ public final class TaskWallFeature {
 			return false;
 		}
 		float[] p = toBoard(origin, st.getValue(PanelBlock.FACING), b.panelH, b.ppb, bh.getLocation());
-		return b.cardAt(p[0], p[1]) != null;
+		TaskBoard.Column col=b.columnAt(p[0]);
+		return b.cardAt(p[0], p[1]) != null || (Foreman.isT3() && col!=null && col.chip!=null && p[1]>=col.chipY-2 && p[1]<=col.chipY+TaskBoard.CHIP_H+2);
 	}
 
 	static TaskBoard board(BlockPos origin) {
@@ -259,7 +269,7 @@ public final class TaskWallFeature {
 			return c.id;
 		}
 		TaskBoard.Column col = b.columnAt(p[0]);
-		if (col != null && col.chip != null && p[1] >= col.chipY - 2 && p[1] <= col.chipY + TaskBoard.CHIP_H + 2 && !col.hidden.isEmpty()) {
+		if (!Foreman.isT3() && col != null && col.chip != null && p[1] >= col.chipY - 2 && p[1] <= col.chipY + TaskBoard.CHIP_H + 2 && !col.hidden.isEmpty()) {
 			return col.hidden.get(0);
 		}
 		return null;
@@ -300,6 +310,19 @@ public final class TaskWallFeature {
 		return o;
 	}
 
+	/** QA aims through the same physical right-click path as a player, rather than changing pages directly. */
+	private static JsonObject aimPageJson(Minecraft mc,String lane,boolean previous,@Nullable String onBoard) {
+		for (TaskBoard board : BOARDS.values()) {
+			if (onBoard!=null && !onBoard.equals(board.origin.getX()+" "+board.origin.getY()+" "+board.origin.getZ())) continue;
+			for (TaskBoard.Column col : board.columns) if (col.col.name().equalsIgnoreCase(lane) && col.chip!=null && mc.level!=null) {
+				Direction facing=mc.level.getBlockState(board.origin).getValue(PanelBlock.FACING);
+				Vec3 point=toWorld(board.origin,facing,board.panelH,board.ppb,col.ax+col.aw*(previous ? .25f : .75f),col.chipY+TaskBoard.CHIP_H/2f);
+				JsonObject result=new JsonObject(); result.add("point",vec(point)); result.add("eye",vec(point.add(facing.getStepX()*2.5,0,facing.getStepZ()*2.5))); return result;
+			}
+		}
+		throw new DevBridge.DevException("no paged lane " + lane);
+	}
+
 	private static JsonArray boardsJson() {
 		JsonArray arr = new JsonArray();
 		for (TaskBoard b : BOARDS.values()) {
@@ -318,6 +341,10 @@ public final class TaskWallFeature {
 				cj.addProperty("x", Math.round(c.x * 10) / 10.0);
 				cj.addProperty("width", Math.round(c.w * 10) / 10.0);
 				cj.addProperty("perRow", c.perRow);
+				cj.addProperty("label", c.col.displayLabel());
+				cj.addProperty("page", c.page);
+				cj.addProperty("pages", c.pages);
+				cj.addProperty("pageSize", c.pageSize);
 				JsonArray hidden = new JsonArray();
 				c.hidden.forEach(hidden::add);
 				cj.add("hidden", hidden);

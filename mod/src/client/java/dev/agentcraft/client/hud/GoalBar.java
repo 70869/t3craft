@@ -54,6 +54,7 @@ public final class GoalBar implements HudElement {
 		if (mc.player == null || s == null || !s.hasData()) {
 			return;
 		}
+		if (Foreman.isT3()) return; // Native T3 HUD reports real runs; no standalone goal planner.
 		Font font = mc.font;
 		int y = TOP + authBannerOffset(s, font, g);
 		boolean stale = s.isStale();
@@ -83,7 +84,7 @@ public final class GoalBar implements HudElement {
 		if (fs == null || fs.auth() != dev.agentcraft.client.foreman.Protocol.AuthStatus.FAILED || !s.link().synced()) {
 			return 0;
 		}
-		String msg = fs.message() != null ? fs.message() : "run `claude` and /login, then restart the Foreman";
+		String msg = fs.message() != null ? fs.message() : "Reconnect T3 Code, then restart the bridge";
 		int maxW = Math.min(360, g.guiWidth() - 40);
 		int lines = TextUtil.wrap(font, msg, maxW - 34).size();
 		Kit.Padding p = Kit.padding("panel_paper");

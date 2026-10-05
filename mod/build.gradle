@@ -74,6 +74,52 @@ java {
 	sourceCompatibility = JavaVersion.VERSION_25
 	targetCompatibility = JavaVersion.VERSION_25
 }
+tasks.named('jar') {
+	from('../LICENSE') { into 'META-INF' }
+	from('../licenses/t3craft-client-MIT.txt') { into 'META-INF' }
+	from('../THIRD-PARTY-NOTICES.md') { into 'META-INF' }
+}
+
+// Plain-JVM integration checks exercise the same paired client used in Minecraft.
+sourceSets {
+	smoke {
+		java.srcDir 'src/smoke/java'
+		compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output + sourceSets.client.compileClasspath + sourceSets.client.output
+		runtimeClasspath += compileClasspath + sourceSets.main.runtimeClasspath + sourceSets.client.runtimeClasspath
+	}
+}
+tasks.register('featureCheck', JavaExec) {
+	classpath = sourceSets.smoke.runtimeClasspath
+	mainClass = 'dev.agentcraft.client.t3.FeatureChecks'
+	args = [project.findProperty('fixturePort') ?: '25680']
+}
+tasks.register('connectionCheck', JavaExec) {
+	classpath = sourceSets.smoke.runtimeClasspath
+	mainClass = 'dev.agentcraft.client.t3.ConnectionChecks'
+	args = [project.findProperty('fixturePort') ?: '25680']
+}
+tasks.register('officeCheck', JavaExec) {
+	classpath = sourceSets.smoke.runtimeClasspath
+	mainClass = 'dev.agentcraft.client.t3.OfficeChecks'
+}
+tasks.register('studioCheck', JavaExec) {
+	classpath = sourceSets.smoke.runtimeClasspath
+	mainClass = 'dev.agentcraft.client.t3.StudioChecks'
+}
+tasks.register('nativeProbe', JavaExec) {
+	classpath = sourceSets.smoke.runtimeClasspath
+	mainClass = 'dev.agentcraft.client.t3.NativeProbe'
+	args = [project.findProperty('config') ?: '../.agentcraft-home/native-t3/t3craft.json']
+}
+tasks.register('writeCheck', JavaExec) {
+	classpath = sourceSets.smoke.runtimeClasspath
+	mainClass = 'dev.agentcraft.client.t3.WriteChecks'
+	args = [project.findProperty('fixturePort') ?: '25680']
+}
+
+// These checks mutate the same isolated fixture, so never execute them concurrently.
+tasks.named('featureCheck') { mustRunAfter('connectionCheck') }
+tasks.named('writeCheck') { mustRunAfter('connectionCheck', 'featureCheck') }
 
 // Seed mod/run with a dev options.txt (muted, 1080p-friendly GUI scale, no onboarding/tutorial
 // noise, no pause on focus loss). Only copied when mod/run/options.txt does not exist yet, so

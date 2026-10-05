@@ -107,7 +107,7 @@ public class DecisionPodiumRenderer extends StationRenderer<DecisionPodiumBlockE
 		if (c == null || c.revision() != s.foremanRevision || !c.decisionId().equals(d.id()) || c.count() != s.count) {
 			Font font = Minecraft.getInstance().font;
 			String header = s.count == 1 ? "1 decision waiting" : s.count + " decisions waiting";
-			String name = UiBits.agentName(d.agentId());
+			String name = Foreman.isT3() && (d.agentId()==null || d.agentId().isEmpty()) ? "T3 Code" : UiBits.agentName(d.agentId());
 			String kind = " · " + DecisionQueue.kindLabel(d.kind());
 			int inner = W - 16;
 			List<FormattedCharSequence> wrapped = TextUtil.wrap(font, UiBits.oneLine(d.question()), inner);

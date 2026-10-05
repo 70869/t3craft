@@ -1,3 +1,5 @@
+> Historical AgentCraft reference. Foreman/simulator commands and standalone AI flows below are obsolete in T3Craft. Use [the current guide](USER-GUIDE.md) and [native integration reference](T3-INTEGRATION.md).
+
 # Screenshot QA
 
 The QA suite is how AgentCraft is judged against [docs/visual-bar.md](visual-bar.md): ten fixed

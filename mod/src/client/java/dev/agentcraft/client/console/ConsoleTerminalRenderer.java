@@ -150,7 +150,7 @@ public class ConsoleTerminalRenderer extends StationRenderer<ConsoleTerminalBloc
 			String name;
 			int nameColor;
 			if (agent == null) {
-				name = "Foreman";
+				name = Foreman.isT3() ? "T3 Code" : "Foreman";
 				nameColor = UiStyle.color("monitor.muted", 0xFF655E55);
 			} else if (UiBits.isUser(agent)) {
 				name = "You";
@@ -271,7 +271,7 @@ public class ConsoleTerminalRenderer extends StationRenderer<ConsoleTerminalBloc
 		FeedRow r = s.card;
 		float y = 15;
 		if (r == null) {
-			WorldUi.submitText(poseStack, collector, s.live ? "No news yet" : "Start the Foreman", 4, y + 10, muted, light);
+			WorldUi.submitText(poseStack, collector, s.live ? "No news yet" : Foreman.isT3() ? "Open T3 Connections" : "Start the Foreman", 4, y + 10, muted, light);
 		} else {
 			if (r.stripe() != 0) {
 				int stripe = r.stripe();

@@ -522,9 +522,9 @@ PROPERTY_DOMAINS = {
 }
 
 LANG = {
-    "monitor": "Monitor", "task_board": "Task Board", "decision_podium": "Decision Podium",
-    "memory_archive": "Memory Archive", "memory_catalog": "Memory Catalog",
-    "merge_station": "Merge Station", "status_lamp": "Status Lamp", "console_terminal": "Console Terminal",
+    "monitor": "T3 Chat Monitor", "task_board": "T3 Task Board", "decision_podium": "T3 Decision Podium",
+    "memory_archive": "T3 History Archive", "memory_catalog": "T3 Chat Catalog",
+    "merge_station": "T3 Checkpoint Desk", "status_lamp": "T3 Status Lamp", "console_terminal": "T3 Chat Terminal",
     "plaster_panel": "Plaster Panel", "plaster_frame": "Framed Plaster Panel", "walnut_panel": "Walnut Panel",
     "walnut_trim": "Walnut Brass Trim", "terracotta_tile": "Terracotta Tile", "oak_parquet": "Oak Parquet",
     "glow_panel": "Glow Panel", "glow_strip": "Glow Strip",
@@ -547,7 +547,8 @@ def build():
         write_json(OUT / "items" / f"{name}.json", data)
     lang = {f"block.{NS}.{k}": v for k, v in LANG.items()}
     lang.update({f"item.{NS}.{k}": v for k, v in LANG.items()})
-    lang["itemGroup.agentcraft"] = "AgentCraft Studio"
+    lang["itemGroup.agentcraft"] = "T3Craft Studio"
+    lang.update({"key.category.agentcraft.agentcraft": "T3Craft", "key.agentcraft.console": "Open T3 chats", "key.agentcraft.decisions": "Open T3 decisions"})
     write_json(OUT / "lang" / "en_us.json", lang)
     assert set(BLOCKSTATES) == set(LANG), set(BLOCKSTATES) ^ set(LANG)
     assert set(PROPERTY_DOMAINS) == set(LANG), set(PROPERTY_DOMAINS) ^ set(LANG)

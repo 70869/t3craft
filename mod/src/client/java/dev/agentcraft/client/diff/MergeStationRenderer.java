@@ -54,7 +54,8 @@ public class MergeStationRenderer extends StationRenderer<MergeStationBlockEntit
 	static final float LIFT = 0.0015f;
 
 	public static class State extends StationRenderState {
-		public boolean show;
+		public boolean t3;
+        public boolean show;
 		public boolean empty;
 		public int index;
 		public int count;
@@ -133,8 +134,21 @@ public class MergeStationRenderer extends StationRenderer<MergeStationBlockEntit
 			return;
 		}
 		s.light = LightCoordsUtil.getLightCoords(level, be.getBlockPos().above());
-		List<Decision> q = queue();
-		int k = rowIndex(level, be.getBlockPos(), be.getBlockState());
+		s.t3=Foreman.isT3();
+        if(s.t3) {
+            var client=dev.agentcraft.client.t3.T3CraftClient.get(); var ready=client.readyReviews();
+            int index=rowIndex(level,be.getBlockPos(),be.getBlockState()); s.index=index; s.count=ready.size();
+            s.empty=index>=ready.size(); s.show=!s.empty || index==0;
+            if(!s.empty) {
+                var row=ready.get(index); s.worker=client.studioBindings().entrySet().stream().filter(e->e.getValue().id().equals(row.id())).map(Map.Entry::getKey).findFirst().orElse(null);
+                s.name=s.worker==null?"T3 Code":ReviewKit.agentName(s.worker); s.nameColor=ReviewKit.agentInk(s.worker);
+                s.taskId=""; s.title=row.title(); s.adds=s.dels=s.files="";
+                s.ciFamily="idle"; s.ciLabel="checkpoint"; s.ciInk=UiStyle.color("paper.muted");
+            }
+            return;
+        }
+        List<Decision> q = queue();
+        int k = rowIndex(level, be.getBlockPos(), be.getBlockState());
 		s.index = k;
 		s.count = q.size();
 		if (k >= q.size()) {
@@ -187,7 +201,7 @@ public class MergeStationRenderer extends StationRenderer<MergeStationBlockEntit
 		}
 		Font font = Minecraft.getInstance().font;
 		int h = s.empty ? EMPTY_H : CARD_H;
-		int w = s.empty ? Math.min(CARD_W, 17 + Math.max(font.width("All merged"), font.width("nothing waits")) + 7) : CARD_W;
+		int w = s.empty ? Math.min(CARD_W, 17 + Math.max(font.width(s.t3 ? "T3 changes" : "All merged"), font.width(s.t3 ? "choose a chat" : "nothing waits")) + 7) : CARD_W;
 		int light = LightCoordsUtil.pack(Math.max(LightCoordsUtil.block(s.light), 11), LightCoordsUtil.sky(s.light));
 		ps.pushPose();
 		// north-facing model frame: the viewer stands at -Z; the card stands on the top face, leaning back
@@ -219,8 +233,8 @@ public class MergeStationRenderer extends StationRenderer<MergeStationBlockEntit
 		if (s.empty) {
 			WorldUi.submitNineSlice(ps, c, WorldUi.Layer.SOLID, Kit.card("done"), 0, 0, w, h, 0xFFFFFFFF, light);
 			WorldUi.submitSprite(ps, c, Kit.dot("done", false), 7, 7, 7, 7, 0xFFFFFFFF, light);
-			WorldUi.submitText(ps, c, "All merged", 17, 4, ink, light);
-			WorldUi.submitText(ps, c, "nothing waits", 17, 12, muted, light);
+			WorldUi.submitText(ps, c, s.t3 ? "T3 changes" : "All merged", 17, 4, ink, light);
+			WorldUi.submitText(ps, c, s.t3 ? "choose a chat" : "nothing waits", 17, 12, muted, light);
 			// the brass foot
 			WorldUi.submitFill(ps, c, 2, h - 1, w - 2, h + 1, UiStyle.color("palette.ui.border"), light);
 			return;
@@ -233,7 +247,7 @@ public class MergeStationRenderer extends StationRenderer<MergeStationBlockEntit
 		int cw = Math.max(10, font.width(count) + 5);
 		int cx = w - 5 - cw;
 		int labelMax = cx - (x + 13) - (s.index == 0 ? 13 : 3);
-		String head = s.index == 0 ? (font.width("Merge review") <= labelMax ? "Merge review" : "Review") : "Next";
+		String head = s.t3 ? "T3 review" : s.index == 0 ? (font.width("Merge review") <= labelMax ? "Merge review" : "Review") : "Next";
 		WorldUi.submitText(ps, c, head, x + 13, 5, ink, light);
 		if (s.index == 0) {
 			float phase = (float) ((System.currentTimeMillis() % 1200) / 1200.0 * Math.PI * 2);

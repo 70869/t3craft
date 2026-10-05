@@ -94,6 +94,7 @@ public final class AgentLife {
 	// state reactions
 	final AgentParticles particles = new AgentParticles();
 	private String lastFamily = "";
+	private @Nullable String lastTaskId;
 	/** Ticks the agent has been live (on shift, Foreman online) without a break. */
 	private int liveFor;
 	private int lastConfetti = -1000;
@@ -248,6 +249,10 @@ public final class AgentLife {
 		sit = snap ? sitTarget : approach(sit, sitTarget, SIT_STEP);
 		boolean alive = !v.stale;
 		String fam = v.family;
+		if (!java.util.Objects.equals(lastTaskId, v.taskId)) {
+			lastTaskId = v.taskId; lastFamily = ""; liveFor = 0; confettiPending = false;
+			bubble.clear();
+		}
 		if (alive && v.active) {
 			// state reactions only for transitions seen live: coming back from "Foreman offline" or
 			// off shift must not replay a puff or a confetti burst for a state that is old news

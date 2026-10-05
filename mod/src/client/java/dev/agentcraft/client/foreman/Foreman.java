@@ -44,7 +44,11 @@ public final class Foreman {
 	}
 
 	public static boolean connected() {
-		return link != null && link.status().synced();
+		return state != null && state.link().synced();
+	}
+
+	public static boolean isT3() {
+		return state != null && state.status() != null && state.status().backend() == Protocol.BackendName.T3;
 	}
 
 	/** Send any client message (type + payload); see docs/protocol.md "Mod -> Foreman". */

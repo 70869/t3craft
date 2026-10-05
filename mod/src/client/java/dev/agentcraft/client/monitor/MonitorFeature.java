@@ -58,6 +58,13 @@ public final class MonitorFeature {
 
 	public static void init() {
 		BlockEntityRenderers.register(ModBlockEntities.MONITOR, ctx -> new MonitorRenderer());
+		dev.agentcraft.client.world.StationInteractions.onUse(dev.agentcraft.block.ModBlocks.MONITOR, (player,pos,state,be) -> {
+			if (!(be instanceof MonitorBlockEntity monitor)) return;
+			var panel = dev.agentcraft.block.PanelBlock.origin(player.level(),pos,state);
+			String agent = RESOLVED.getOrDefault(panel, monitor.binding().isEmpty() ? "feed" : monitor.binding());
+			if (agent.equals("feed")) dev.agentcraft.client.t3.T3CraftClient.get().openBoard();
+			else dev.agentcraft.client.foreman.T3Projection.openAgent(agent);
+		});
 		Foreman.addListener(new ForemanListener() {
 			@Override
 			public void onSnapshot(ForemanState st) {

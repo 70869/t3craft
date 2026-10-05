@@ -2,6 +2,8 @@ package dev.agentcraft.client.taskwall;
 
 import dev.agentcraft.AgentCraft;
 import dev.agentcraft.client.foreman.ForemanState;
+import dev.agentcraft.client.foreman.Foreman;
+import dev.agentcraft.client.t3.WallPagination;
 import dev.agentcraft.client.foreman.Protocol.Agent;
 import dev.agentcraft.client.foreman.Protocol.CiStatus;
 import dev.agentcraft.client.foreman.Protocol.Task;
@@ -94,6 +96,11 @@ final class TaskBoard {
 			this.label = label;
 			this.card = card;
 		}
+
+		String displayLabel() {
+			if (!Foreman.isT3()) return label;
+			return switch (this) { case TODO -> "Idle"; case DOING -> "Working"; case REVIEW -> "Needs you"; case DONE -> "Done"; };
+		}
 	}
 
 	/** One column: header, lane rectangle (target and animated), overflow chip. */
@@ -109,6 +116,9 @@ final class TaskBoard {
 		FormattedCharSequence blockedSeq = FormattedCharSequence.EMPTY;
 		float blockedW;
 		int perRow = 1;
+		int page;
+		int pages = 1;
+		int pageSize;
 		FormattedCharSequence label = FormattedCharSequence.EMPTY;
 		FormattedCharSequence countSeq = FormattedCharSequence.EMPTY;
 		float countW;
@@ -339,6 +349,7 @@ final class TaskBoard {
 	final Map<String, Card> cards = new LinkedHashMap<>();
 	private final Map<String, Title> titles = new HashMap<>();
 	boolean everLaidOut;
+	boolean pageChanged;
 	final DisplayDraw.Rects lanes = new DisplayDraw.Rects();
 	final DisplayDraw.Rects shadows = new DisplayDraw.Rects();
 	final DisplayDraw.Rects veil = new DisplayDraw.Rects();
@@ -375,7 +386,7 @@ final class TaskBoard {
 			case DOING -> Col.DOING;
 			case REVIEW -> Col.REVIEW;
 			case DONE -> Col.DONE;
-			case BLOCKED -> t.worktree() != null || t.branch() != null ? Col.DOING : Col.TODO;
+			case BLOCKED -> Foreman.isT3() ? Col.REVIEW : t.worktree() != null || t.branch() != null ? Col.DOING : Col.TODO;
 			default -> Col.TODO;
 		};
 	}
@@ -396,7 +407,7 @@ final class TaskBoard {
 	boolean sync(@Nullable ForemanState s, int panelW, int panelH, long taskSeq, long agentSeq, long now) {
 		int ppb = density(panelW, panelH);
 		boolean resized = ppb != this.ppb || panelW != this.panelW || panelH != this.panelH;
-		if (!resized && taskSeq == this.taskSeq && agentSeq == this.agentSeq && everLaidOut) {
+		if (!pageChanged && !resized && taskSeq == this.taskSeq && agentSeq == this.agentSeq && everLaidOut) {
 			return false;
 		}
 		boolean tasksChanged = taskSeq != this.taskSeq;
@@ -405,7 +416,7 @@ final class TaskBoard {
 		this.ppb = ppb;
 		this.panelW = panelW;
 		this.panelH = panelH;
-		if (resized || tasksChanged || !everLaidOut) {
+		if (pageChanged || resized || tasksChanged || !everLaidOut) {
 			long t0 = System.nanoTime();
 			layout(s, resized || !everLaidOut);
 			layoutNanos = System.nanoTime() - t0;
@@ -418,6 +429,7 @@ final class TaskBoard {
 			}
 		}
 		everLaidOut = true;
+		pageChanged = false;
 		return true;
 	}
 
@@ -439,6 +451,10 @@ final class TaskBoard {
 		}
 		cardsTop = iy0 + HEADER_H + 3;
 		float avail = iy1 - cardsTop;
+		if (Foreman.isT3()) {
+			layoutT3(s, font, snap);
+			return;
+		}
 
 		// --- bucket the tasks
 		Map<Col, List<Task>> by = new LinkedHashMap<>();
@@ -521,7 +537,7 @@ final class TaskBoard {
 				case REVIEW -> col.needYou > 0 ? "waiting" : "thinking";
 				case DONE -> "done";
 			};
-			String label = listMode ? "TASKS" : col.col.label.toUpperCase(Locale.ROOT);
+			String label = listMode ? "TASKS" : col.col.displayLabel().toUpperCase(Locale.ROOT);
 			String cs = Integer.toString(col.count);
 			// an explicit "1 blocked" chip (not a red dot next to the count, which read as "4 blocked")
 			String bl = col.blocked > 0 ? col.blocked + " blocked" : "";
@@ -624,13 +640,95 @@ final class TaskBoard {
 		this.total = total;
 	}
 
+	/** Native chats get full cards and independent lane pages, never compressed title strips. */
+	private void layoutT3(@Nullable ForemanState s, Font font, boolean snap) {
+		Map<Col,List<Task>> buckets = new LinkedHashMap<>();
+		for (Col col : Col.values()) buckets.put(col,new ArrayList<>());
+		Set<String> present = new HashSet<>();
+		if (s != null) for (Task task : s.tasks().values()) if (shown(task)) {
+			buckets.get(colOf(task)).add(task);
+			present.add(task.id());
+			String title = titleText(task);
+			Title old = titles.get(task.id());
+			if (old == null || !old.text.equals(title)) titles.put(task.id(),new Title(font,title));
+		}
+		titles.keySet().retainAll(present);
+		Comparator<Task> recent = Comparator.comparingLong(Task::updatedAt).reversed().thenComparing(Task::id);
+		buckets.values().forEach(tasks -> tasks.sort(Comparator.comparingInt(Task::priority).reversed().thenComparing(recent)));
+		columns.clear();
+		if (listMode) columns.add(list); else columns.addAll(List.of(four));
+		int filled = listMode ? 1 : (int)buckets.values().stream().filter(tasks -> !tasks.isEmpty()).count();
+		float usable = ix1 - ix0 - GAP * (columns.size()-1);
+		float emptyWidth = Math.min(usable / columns.size(),emptyWidth(font));
+		float fullWidth = filled == 0 ? usable / columns.size() : (usable - emptyWidth*(columns.size()-filled)) / filled;
+		float x = ix0;
+		for (Column col : columns) {
+			List<Task> tasks;
+			if (listMode) {
+				tasks = new ArrayList<>();
+				for (Col key : List.of(Col.REVIEW,Col.DOING,Col.TODO,Col.DONE)) tasks.addAll(buckets.get(key));
+			} else tasks = buckets.get(col.col);
+			col.x = x; col.w = tasks.isEmpty() ? emptyWidth : fullWidth;
+			x += col.w + GAP;
+			// Page turns snap so off-page cards cannot fly across the navigation controls.
+			boolean reset = snap || pageChanged || !col.placed;
+			if (reset) { col.ax=col.x; col.aw=col.w; col.placed=true; }
+			col.count=tasks.size(); col.blocked=0; col.blockedW=0; col.blockedSeq=seq("");
+			col.needYou=(int)tasks.stream().filter(task -> StatusMap.needsYou(s,task)).count();
+			col.family=listMode ? "working" : switch(col.col) { case TODO -> "idle"; case DOING -> "working"; case REVIEW -> "waiting"; case DONE -> "done"; };
+			String count=Integer.toString(col.count);
+			col.label=seq(TextUtil.ellipsize(font,listMode ? "T3 CHATS" : col.col.displayLabel().toUpperCase(Locale.ROOT),(int)col.w-font.width(count)-14));
+			col.countSeq=seq(count); col.countW=font.width(count); col.perRow=1;
+			// Reserve room for three title lines, plus blocked reason when present.
+			int height=fullH(MAX_LINES);
+			for (Task task : tasks) height=Math.max(height,fullH(MAX_LINES+reasonLines(task,titleWidths(col.w)[1]).size()));
+			int capacity=Math.max(1,(int)((iy1-cardsTop-CHIP_H-5+GAP)/(height+GAP)));
+			WallPagination page=WallPagination.of(tasks.size(),capacity,col.page);
+			col.page=page.page(); col.pages=page.pages(); col.pageSize=capacity;
+			col.hidden.clear();
+			col.chipY=iy1-CHIP_H; col.chipW=col.w;
+			col.chip=col.pages>1 ? seq("< " + (col.page+1) + "/" + col.pages + " >") : null;
+			for (int i=0;i<tasks.size();i++) {
+				Task task=tasks.get(i);
+				Card card=cards.get(task.id()); boolean isNew=card==null;
+				if (isNew) { card=new Card(task.id(),task); cards.put(task.id(),card); }
+				Col before=card.col;
+				boolean wasVisible=card.visible;
+				card.task=task; card.col=colOf(task); card.removing=false;
+				card.sprite=Kit.card(task.status()==TaskStatus.BLOCKED ? "blocked" : card.col.card);
+				card.size=Size.FULL; card.maxLines=MAX_LINES; card.tw=col.w; card.th=height;
+				card.visible=i>=page.start() && i<page.end();
+				card.tx=col.x; card.ty=card.visible ? cardsTop+(i-page.start())*(height+GAP) : col.chipY;
+				if (!card.visible) col.hidden.add(task.id());
+				card.next=content(font,s,card);
+				if (reset || isNew || !card.placed || !wasVisible || !card.visible) {
+					card.x=card.tx; card.y=card.ty; card.w=card.tw; card.h=card.th;
+					card.placed=true; card.scale=1; card.cur=card.next; card.next=null;
+					card.arrivedFrom=null; card.arrivedAt=0; card.flying=false;
+				} else if (before!=card.col) { card.arrivedFrom=before; card.arrivedAt=0; }
+			}
+		}
+		cards.keySet().retainAll(present);
+		total=present.size();
+	}
+
+	/** Right-click the left or right half of a lane's page control. Consumes boundary clicks too. */
+	boolean pageAt(float px, float py) {
+		if (!Foreman.isT3()) return false;
+		Column col=columnAt(px);
+		if (col==null || col.chip==null || py<col.chipY-2 || py>col.chipY+CHIP_H+2) return false;
+		col.page=Math.clamp(col.page+(px<col.ax+col.aw/2 ? -1 : 1),0,col.pages-1);
+		pageChanged=true;
+		return true;
+	}
+
 	// ------------------------------------------------------------------ planning
 
 	/** Width of a slim empty lane: the widest header label with a "0" count. */
 	private static float emptyWidth(Font font) {
 		int w = 0;
 		for (Col c : Col.values()) {
-			w = Math.max(w, font.width(c.label.toUpperCase(Locale.ROOT)));
+			w = Math.max(w, font.width(c.displayLabel().toUpperCase(Locale.ROOT)));
 		}
 		return Math.max(48, w + font.width("0") + 14);
 	}
@@ -952,6 +1050,10 @@ final class TaskBoard {
 		} else {
 			hint = t.id();
 		}
+		if (Foreman.isT3() && !blocked && yours == null) {
+			String location = t.description();
+			hint = location == null || location.isBlank() ? c.col.displayLabel() : location.split("\\R",2)[0];
+		}
 		// the hint beats the name (the face already says who): name + hint, else face + hint, else a shorter hint
 		int faceW = assignee != null ? 10 : 0;
 		if (nameText != null && font.width(nameText) + 4 + font.width(hint) + faceW <= inner) {
@@ -967,7 +1069,7 @@ final class TaskBoard {
 		}
 		int room = (int) (inner - footerLeft);
 		if (font.width(hint) > room) {
-			hint = blocked || hintColor == error || hint.startsWith("after") ? TextUtil.ellipsize(font, hint, room)
+			hint = Foreman.isT3() || blocked || hintColor == error || hint.startsWith("after") ? TextUtil.ellipsize(font, hint, room)
 				: font.width(t.id()) <= room ? t.id() : "";
 		}
 		o.hint = hint.isEmpty() ? null : seq(hint);

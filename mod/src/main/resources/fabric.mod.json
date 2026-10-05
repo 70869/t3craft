@@ -2,10 +2,11 @@
 	"schemaVersion": 1,
 	"id": "agentcraft",
 	"version": "${version}",
-	"name": "AgentCraft",
-	"description": "Minecraft as a spatial UI for real multi-agent Claude work.",
+	"name": "T3Craft",
+	"description": "Minecraft as a spatial interface for T3 Code threads and agents.",
 	"authors": [
-		"Blendi"
+		"Blendi",
+		"Maxwell Young (adapted T3 client)"
 	],
 	"license": "MIT",
 	"icon": "assets/agentcraft/icon.png",

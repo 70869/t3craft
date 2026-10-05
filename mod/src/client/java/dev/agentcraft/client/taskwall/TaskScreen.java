@@ -333,11 +333,11 @@ public class TaskScreen extends Screen {
 		String primary = confirmCancel ? "cancel" : blocked || t.ci() == CiStatus.FAIL ? "retry" : t.status() == TaskStatus.TODO ? "prioritize" : "";
 		int gap = 4;
 		int bw = (inner - gap * 3) / 4;
-		button(g, "retry", "Retry", x, y, bw, 20, primary.equals("retry"), live && !cancelled && t.status() != TaskStatus.TODO, null, mouseX, mouseY,
+		button(g, "retry", "Retry", x, y, bw, 20, primary.equals("retry"), live && !Foreman.isT3() && !cancelled && t.status() != TaskStatus.TODO, null, mouseX, mouseY,
 			false);
-		button(g, "prioritize", "Prioritize", x + (bw + gap), y, bw, 20, primary.equals("prioritize"), live && !cancelled && !done, null, mouseX,
+		button(g, "prioritize", "Prioritize", x + (bw + gap), y, bw, 20, primary.equals("prioritize"), live && !Foreman.isT3() && !cancelled && !done, null, mouseX,
 			mouseY, false);
-		button(g, "reassign", "Reassign", x + 2 * (bw + gap), y, bw, 20, false, live && !cancelled && !done, null,
+		button(g, "reassign", "Reassign", x + 2 * (bw + gap), y, bw, 20, false, live && !Foreman.isT3() && !cancelled && !done, null,
 			mouseX, mouseY, false);
 		button(g, "cancel", confirmCancel ? "Confirm" : "Cancel", x + 3 * (bw + gap), y, inner - 3 * (bw + gap), 20, primary.equals("cancel"),
 			live && !cancelled && !done, null, mouseX, mouseY, false);
@@ -414,6 +414,9 @@ public class TaskScreen extends Screen {
 		}
 		if (feedback != null) {
 			return feedback;
+		}
+		if (live && Foreman.isT3()) {
+			return "Manage assignments in T3 Code";
 		}
 		return live ? null : "Foreman offline: actions are disabled";
 	}

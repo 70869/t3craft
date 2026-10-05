@@ -89,7 +89,7 @@ public final class HqWorldDriver {
 		}
 		ForemanState st = Foreman.state();
 		Anchors.Layout layout = Anchors.current();
-		if (st == null || !st.hasData() || st.isStale() || layout.isEmpty() || layout.bounds() == null) {
+		if (st == null || !st.hasData() || (st.isStale() && !Foreman.isT3()) || layout.isEmpty() || layout.bounds() == null) {
 			return;
 		}
 		ticks++;
@@ -97,7 +97,7 @@ public final class HqWorldDriver {
 		if (!changed && ticks % RESYNC_TICKS != 0) {
 			return;
 		}
-		Wanted w = changed || last == null ? compute(st) : last;
+		Wanted w = changed || last == null || Foreman.isT3() ? compute(st) : last;
 		lastRevision = st.revision();
 		lastLayout = layout.revision();
 		boolean differs = !Objects.equals(w, last);
@@ -166,8 +166,9 @@ public final class HqWorldDriver {
 		Map<String, Boolean> lit = new HashMap<>();
 		Map<String, String> waitingOn = awaiting(st);
 		for (Agent a : st.agents().values()) {
-			lamps.put("agent:" + a.id(), agentLamp(a, waitingOn.containsKey(a.id())));
-			lit.put(a.id(), a.isActive());
+			boolean offline=Foreman.isT3() && (st.isStale() || dev.agentcraft.client.foreman.T3Projection.agentOffline(a.id()));
+			lamps.put("agent:" + a.id(), offline ? LampStatus.OFF : agentLamp(a, waitingOn.containsKey(a.id())));
+			lit.put(a.id(), a.isActive() && !offline);
 		}
 		int n = 0;
 		for (Repo r : st.repos().values()) {
@@ -183,7 +184,24 @@ public final class HqWorldDriver {
 		boolean merge = st.oldestOpen(DecisionKind.MERGE) != null;
 		lamps.put("merge", merge ? LampStatus.WAITING : LampStatus.OFF);
 		lamps.put(BEACON_BINDING, beaconLamp(st, open, goal));
-		return new Wanted(Map.copyOf(lamps), open, merge, Map.copyOf(lit));
+		if(Foreman.isT3()) {
+            var client=dev.agentcraft.client.t3.T3CraftClient.get();
+            for(int slot=1;slot<=3;slot++) lamps.put("ci:#"+slot,LampStatus.OFF);
+            int slot=0;
+            for(var machine:client.state().machines()) lamps.put("ci:#"+(++slot),machine.online()?LampStatus.WORKING:LampStatus.ERROR);
+            LampStatus aggregate=LampStatus.IDLE;
+            boolean any=false, working=false, needs=false, error=false;
+            for(var row:client.state().snapshot().threads()) if(client.state().online(row.id())) {
+                any=true;
+                working |= row.status()==dev.agentcraft.client.t3.T3State.Status.WORKING;
+                needs |= row.status()==dev.agentcraft.client.t3.T3State.Status.NEEDS_YOU;
+                error |= row.status()==dev.agentcraft.client.t3.T3State.Status.ERROR;
+            }
+            aggregate=needs?LampStatus.WAITING:error?LampStatus.ERROR:working?LampStatus.WORKING:any?LampStatus.IDLE:LampStatus.OFF;
+            lamps.put("goal",aggregate); lamps.put("goal:atrium",aggregate); lamps.put(BEACON_BINDING,aggregate);
+            merge=!client.readyReviews().isEmpty(); lamps.put("merge",merge?LampStatus.WAITING:LampStatus.OFF);
+        }
+        return new Wanted(Map.copyOf(lamps), open, merge, Map.copyOf(lit));
 	}
 
 	/** The cupola beacon's binding (the whole studio at a glance, seen from outside). */

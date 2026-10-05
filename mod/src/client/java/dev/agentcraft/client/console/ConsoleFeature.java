@@ -35,7 +35,7 @@ public final class ConsoleFeature {
 	public static void init() {
 		BlockEntityRenderers.register(ModBlockEntities.CONSOLE_TERMINAL, ctx -> new ConsoleTerminalRenderer());
 		Keys.ensureRegistered();
-		DevBridge.registerScreen("console", mc -> ConsoleScreen.forDev(null));
+		DevBridge.registerScreen("console", mc -> dev.agentcraft.client.t3.T3CraftClient.get().studioScreen("chat",null));
 		dev.agentcraft.client.world.StationInteractions.onUse(ModBlocks.CONSOLE_TERMINAL, (player, pos, state, be) -> open(null, false));
 		ClientTickEvents.END_CLIENT_TICK.register(mc -> {
 			if (mc.player == null) {
@@ -57,6 +57,10 @@ public final class ConsoleFeature {
 
 	public static void open(String prefill, boolean byKey) {
 		Minecraft mc = Minecraft.getInstance();
+		if (dev.agentcraft.client.t3.T3CraftClient.get() != null) {
+			dev.agentcraft.client.t3.T3CraftClient.get().openPanel();
+			return;
+		}
 		ConsoleScreen s = new ConsoleScreen(prefill);
 		if (byKey) {
 			s.openedByKey();

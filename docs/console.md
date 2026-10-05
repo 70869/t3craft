@@ -1,3 +1,5 @@
+> Historical AgentCraft reference. Foreman/simulator commands and standalone AI flows below are obsolete in T3Craft. Use [the current guide](USER-GUIDE.md) and [native integration reference](T3-INTEGRATION.md).
+
 # Console, decisions, permissions and HUD
 
 The practical core of AgentCraft: how you talk to the team and answer them without leaving the

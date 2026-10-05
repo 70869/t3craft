@@ -50,6 +50,8 @@ public final class ConnectionBanner implements HudElement {
 		if (mc.player == null || Foreman.state() == null) {
 			return;
 		}
+		if (mc.gui.screen() != null && mc.gui.screen().getClass().getPackageName().equals("dev.agentcraft.client.t3")) return;
+		if (Foreman.isT3() && dev.agentcraft.client.t3.T3CraftClient.get().notificationVisible()) return;
 		ForemanState st = Foreman.state();
 		LinkStatus link = st.link();
 		ForemanStatus fs = st.status();
@@ -67,7 +69,7 @@ public final class ConnectionBanner implements HudElement {
 			detail = "AGENTCRAFT_FOREMAN=0";
 		} else if (link.synced()) {
 			dot = fs != null && fs.auth() == AuthStatus.FAILED ? "error" : fs != null && fs.auth() == AuthStatus.CHECKING ? "thinking" : "working";
-			title = "Foreman · " + backendLabel(fs);
+			title = backendLabel(fs);
 			if (fs != null && fs.backend() == BackendName.CLAUDE && fs.account() != null) {
 				detail = fs.account();
 			}
@@ -77,12 +79,12 @@ public final class ConnectionBanner implements HudElement {
 		} else if (link.everSynced()) {
 			dot = "waiting";
 			pulse = true;
-			title = "Reconnecting to the Foreman" + (link.attempt() > 1 ? " (" + link.attempt() + ")" : "");
+			title = "Reconnecting to T3 Code";
 			detail = "showing last known state";
 		} else {
 			dot = "idle";
-			title = "Foreman not running";
-			detail = "start it: cd foreman; npm run start";
+			title = "Connect T3 Code";
+			detail = fs != null && fs.message() != null ? fs.message() : "Press ` to pair";
 		}
 		drawPill(g, font, dot, title, detail, alpha, pulse, now);
 
@@ -98,6 +100,7 @@ public final class ConnectionBanner implements HudElement {
 		return switch (fs.backend()) {
 			case SIM -> fs.speed() != null && fs.speed() != 1.0 ? "sim ×" + trim(fs.speed()) : "sim";
 			case CLAUDE -> "claude";
+			case T3 -> "T3 Code";
 			default -> fs.backend().wire();
 		};
 	}
@@ -133,7 +136,7 @@ public final class ConnectionBanner implements HudElement {
 
 	private static void drawAuthBanner(GuiGraphicsExtractor g, Font font, ForemanStatus fs) {
 		String head = "Claude backend can't authenticate";
-		String msg = fs.message() != null ? fs.message() : "run `claude` and /login, then restart the Foreman";
+		String msg = fs.message() != null ? fs.message() : "Reconnect T3 Code, then restart the bridge";
 		int maxW = Math.min(360, g.guiWidth() - 40);
 		var lines = TextUtil.wrap(font, msg, maxW - 34);
 		Kit.Padding p = Kit.padding("panel_paper");

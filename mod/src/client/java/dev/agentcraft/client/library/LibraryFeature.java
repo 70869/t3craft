@@ -34,7 +34,7 @@ public final class LibraryFeature {
 	public static void init() {
 		BlockEntityRenderers.register(ModBlockEntities.MEMORY_ARCHIVE, ctx -> new MemoryArchiveRenderer());
 		MemoryIndex.init();
-		DevBridge.registerScreen("library", mc -> new LibraryScreen(null, null));
+		DevBridge.registerScreen("library", mc -> dev.agentcraft.client.t3.T3CraftClient.get().studioScreen("library",null));
 		StationInteractions.onUse(ModBlocks.MEMORY_ARCHIVE, (player, pos, state, be) -> {
 			String scope = be == null ? "" : be.binding();
 			int k = MemoryArchiveRenderer.rowIndex(player.level(), pos, state, scope);
@@ -51,7 +51,8 @@ public final class LibraryFeature {
 
 	/** Open the library; {@code scope} null/empty = all notes, {@code memoryId} null = the plan / newest. */
 	public static void open(@Nullable String scope, @Nullable String memoryId) {
-		Minecraft.getInstance().gui.setScreen(new LibraryScreen(scope, memoryId));
+		var client = dev.agentcraft.client.t3.T3CraftClient.get();
+		if (memoryId != null) client.openHistory(memoryId); else client.openLibrary();
 	}
 
 	private static void registerDev() {

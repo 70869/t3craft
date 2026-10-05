@@ -187,7 +187,8 @@ public class TaskBoardRenderer extends StationRenderer<TaskBoardBlockEntity, Tas
 				WorldUi.submitText(ps, c, col.blockedSeq, bx, b.iy0 + 3, UiStyle.color("paper.del_fg", 0xFF873C2A), light);
 			}
 			if (col.chip != null) {
-				WorldUi.submitText(ps, c, col.chip, col.chipX() + 5, col.chipY + 2, muted, light);
+				float textX=Foreman.isT3() ? col.ax+(col.aw-Minecraft.getInstance().font.width(col.chip))/2 : col.chipX()+5;
+				WorldUi.submitText(ps, c, col.chip, textX, col.chipY + 2, muted, light);
 			}
 		}
 		ps.popPose();
@@ -229,10 +230,10 @@ public class TaskBoardRenderer extends StationRenderer<TaskBoardBlockEntity, Tas
 	/** No tasks yet: a paper note pinned in the middle that says how to start, with the console key as a keycap. */
 	private static void drawEmpty(PoseStack ps, SubmitNodeCollector c, TaskBoard b, int light) {
 		Font font = Minecraft.getInstance().font;
-		String l1 = "No tasks yet";
+		String l1 = Foreman.isT3() ? "No T3 chats yet" : "No tasks yet";
 		String key = TaskWallFeature.startKey();
-		String pre = key.isEmpty() ? "Open the console, type a goal" : "Press ";
-		String post = key.isEmpty() ? "" : " and type a goal";
+		String pre = key.isEmpty() ? (Foreman.isT3() ? "Open T3 Connections" : "Open the console, type a goal") : "Press ";
+		String post = key.isEmpty() ? "" : Foreman.isT3() ? " to open your T3 chats" : " and type a goal";
 		float kw = key.isEmpty() ? 0 : font.width(key) + 8;
 		float w2 = font.width(pre) + kw + font.width(post);
 		float w = Math.max(font.width(l1), w2) + 18, h = 33;

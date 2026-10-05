@@ -121,7 +121,7 @@ final class MonitorScreen {
 	boolean sync(@Nullable ForemanState s, String binding, ScreenStyle st, int ppb, int panelW, int panelH, long logSeq, long agentSeq, long now) {
 		Mode m;
 		String id = binding;
-		if (s == null || !s.hasData()) {
+		if (s == null || !s.hasData() || (dev.agentcraft.client.foreman.Foreman.isT3() && !"feed".equals(binding) && dev.agentcraft.client.foreman.T3Projection.agentOffline(binding))) {
 			m = Mode.CONNECTING;
 		} else if ("feed".equals(binding)) {
 			m = Mode.FEED;
@@ -129,7 +129,7 @@ final class MonitorScreen {
 			Agent a = s.agent(binding);
 			m = a == null ? Mode.NO_AGENT : !a.isActive() ? Mode.OFF_SHIFT : Mode.LIVE;
 		}
-		String connect = m == Mode.CONNECTING ? connectText(s) : "";
+		String connect = m == Mode.CONNECTING ? (dev.agentcraft.client.foreman.Foreman.isT3() && dev.agentcraft.client.foreman.T3Projection.agentOffline(binding) ? "T3 machine offline" : connectText(s)) : "";
 		boolean same = m == mode && id.equals(agentId) && st == style && ppb == this.ppb && panelW == this.panelW && panelH == this.panelH
 			&& logSeq == this.logSeq && agentSeq == this.agentSeq && connect.equals(connectText);
 		if (same) {
@@ -196,7 +196,7 @@ final class MonitorScreen {
 				String n = a != null ? a.name() : agentId.isEmpty() ? "Monitor" : agentId;
 				nameColor = st.name(agentId);
 				dotFamily = a == null ? "idle" : mode == Mode.OFF_SHIFT ? "idle" : a.state().family();
-				String task = a != null && a.taskId() != null && mode == Mode.LIVE ? a.taskId() : "";
+				String task = dev.agentcraft.client.foreman.Foreman.isT3() ? "" : a != null && a.taskId() != null && mode == Mode.LIVE ? a.taskId() : "";
 				int pillW = task.isEmpty() ? 0 : font.width(task) + 6;
 				name = LogRows.seq(TextUtil.ellipsize(font, n, w - 10 - pillW));
 				pill = task.isEmpty() ? null : LogRows.seq(task);
@@ -230,7 +230,7 @@ final class MonitorScreen {
 					}
 				}
 				if (mode != Mode.LIVE) {
-					String line = mode == Mode.OFF_SHIFT ? "Off shift" : "Not on the team";
+					String line = dev.agentcraft.client.foreman.Foreman.isT3() ? "No T3 chat attached" : mode == Mode.OFF_SHIFT ? "Off shift" : "Not on the team";
 					String sub = mode == Mode.OFF_SHIFT ? "in the lounge" : "binding: " + agentId;
 					addCentre(font, line, st.text());
 					addCentre(font, TextUtil.ellipsize(font, sub, w), st.muted());
@@ -248,7 +248,7 @@ final class MonitorScreen {
 					pillColor = st.muted();
 					activity = LogRows.seq(TextUtil.ellipsize(font, g.text(), w));
 				} else {
-					activity = LogRows.seq("no goal yet");
+					activity = LogRows.seq(dev.agentcraft.client.foreman.Foreman.isT3() ? "Saved T3 chats" : "no goal yet");
 				}
 				activityX = cx0;
 				activityY = y + LogRows.LINE;

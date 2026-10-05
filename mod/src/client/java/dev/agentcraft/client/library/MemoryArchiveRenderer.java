@@ -100,7 +100,7 @@ public class MemoryArchiveRenderer extends StationRenderer<MemoryArchiveBlockEnt
 		if (k == 0) {
 			s.show = true;
 			s.plate = true;
-			s.label = scope.isEmpty() ? "Memory" : MemoryIndex.scopeLabel(scope);
+			s.label = scope.isEmpty() ? (Foreman.isT3() ? "T3 history" : "Memory") : MemoryIndex.scopeLabel(scope);
 			int n = MemoryIndex.count(scope);
 			s.count = String.valueOf(n);
 			s.fresh = MemoryIndex.unread(scope) > 0;

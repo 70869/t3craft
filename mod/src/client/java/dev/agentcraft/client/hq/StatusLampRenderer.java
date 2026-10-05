@@ -198,7 +198,20 @@ public class StatusLampRenderer extends StationRenderer<StatusLampBlockEntity, S
 			s.line2a = "Foreman offline · last known state";
 			s.line2b = "";
 		}
-		int w = Math.max(font.width(s.line1), font.width(s.line2a) + font.width(s.line2b));
+		if (Foreman.isT3()) {
+            var client=dev.agentcraft.client.t3.T3CraftClient.get(); var snapshot=client.state().snapshot();
+            var focused=snapshot.focusedRow();
+            long liveWorking=snapshot.threads().stream().filter(r->client.state().online(r.id()) && r.status()==dev.agentcraft.client.t3.T3State.Status.WORKING).count();
+            long needs=snapshot.threads().stream().filter(r->client.state().online(r.id()) && r.status()==dev.agentcraft.client.t3.T3State.Status.NEEDS_YOU).count();
+            s.hasGoal=focused!=null; s.progress=0; s.percent="T3";
+            s.statusWord=!snapshot.connected()?"OFFLINE":focused==null?"CONNECTED":dev.agentcraft.client.t3.StudioProjection.label(focused.status()).toUpperCase(Locale.ROOT);
+            s.statusColor=UiStyle.status(needs>0?"waiting":liveWorking>0?"working":"idle");
+            var title=TextUtil.wrapPlain(font,focused==null?"T3 Code studio":focused.title(),TEXT_W);
+            s.goalLines=title.size()>3?List.of(title.get(0),title.get(1),TextUtil.ellipsize(font,String.join(" ",title.subList(2,title.size())),TEXT_W)):List.copyOf(title);
+            s.line1=snapshot.threads().size()+" saved chats · "+liveWorking+" working";
+            s.line2a=client.residents().size()+" desks · "+needs+" need you"; s.line2b="";
+        }
+        int w = Math.max(font.width(s.line1), font.width(s.line2a) + font.width(s.line2b));
 		for (String l : s.goalLines) {
 			w = Math.max(w, font.width(l));
 		}

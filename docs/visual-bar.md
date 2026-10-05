@@ -1,3 +1,5 @@
+> Historical AgentCraft reference. Foreman/simulator commands and standalone AI flows below are obsolete in T3Craft. Use [the current guide](USER-GUIDE.md) and [native integration reference](T3-INTEGRATION.md).
+
 # Visual bar — AgentCraft
 
 The bar is **"a screenshot of this would get thousands of upvotes on r/Minecraft and look like a

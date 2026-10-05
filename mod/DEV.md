@@ -1,4 +1,8 @@
-# AgentCraft mod: developer notes
+# T3Craft mod: developer notes
+
+The runtime now connects directly to paired T3 environments. Set `T3CRAFT_CONFIG` to a private development configuration if you do not want to use Minecraft's default `config/t3craft.json`. See [developer checks](../tools/README.md) and [integration coverage](../docs/T3-INTEGRATION.md).
+
+The original HQ presentation types and optional mock-scene inspection commands below retain AgentCraft names. There is no active Foreman connection or external backend.
 
 Fabric mod `agentcraft` (package `dev.agentcraft`). Common entrypoint `dev.agentcraft.AgentCraft`,
 client entrypoint `dev.agentcraft.client.AgentCraftClient`. Loom's split source sets are used:
@@ -45,7 +49,7 @@ Always isolate Gradle:
 
 ```bash
 cd mod
-GRADLE_USER_HOME=C:/Projects/agentcraft/.gradle-home ./gradlew build        # jar -> mod/build/libs/agentcraft-0.1.0.jar
+GRADLE_USER_HOME=C:/Projects/agentcraft/.gradle-home ./gradlew build        # jar -> mod/build/libs/t3craft-0.2.0.jar
 GRADLE_USER_HOME=C:/Projects/agentcraft/.gradle-home ./gradlew runClient    # dev client
 GRADLE_USER_HOME=C:/Projects/agentcraft/.gradle-home ./gradlew --stop       # stop OUR daemons only
 ```
@@ -78,20 +82,16 @@ Delete `mod/run/saves/AgentCraft HQ` to start over with a fresh world.
 | Var | Default | Effect |
 |---|---|---|
 | `AGENTCRAFT_DEV_PORT` | 7879 | DevBridge port (always bound to 127.0.0.1) |
-| `AGENTCRAFT_DEV` | 1 | `0` disables the DevBridge |
-| `AGENTCRAFT_MUTE` | 1 | Forces master and music volume to 0 at startup. **Set `0` for real use** (for example in launch.ps1) to keep your own volume |
-| `AGENTCRAFT_FOCUS` | 0 | `0`: the window is shown **without activating it**, so it never steals focus. `1`: normal "come to front" |
+| `AGENTCRAFT_DEV` | 0 | `1` enables the developer-only DevBridge |
+| `AGENTCRAFT_MUTE` | 0 | `1` forces master and music volume to 0 at startup for unattended QA |
+| `AGENTCRAFT_FOCUS` | 1 | `0`: show without activating; `1`: normal foreground behavior |
 | `AGENTCRAFT_AUTOWORLD` | 1 | `0`: stay on the title screen |
 | `AGENTCRAFT_SHOTS_DIR` | `<repo>/artifacts/shots` | Where `dev.screenshot` writes |
 | `AGENTCRAFT_DEV_ALLOW_ORIGIN` | 0 | `1` lets browser pages (which send an Origin header) connect. They are refused by default |
 | `AGENTCRAFT_DEV_TEST` | 0 | `1` registers test-only commands (`dev.test.stall`, which blocks the render thread to simulate a hung game; `dev.test.foremanMessage`). Never set it for real use |
-| `AGENTCRAFT_PORT` | 7878 | Foreman WebSocket port the mod connects to (always 127.0.0.1) |
-| `AGENTCRAFT_FOREMAN` | 1 | `0` disables the Foreman link (the HUD says so) |
+| `T3CRAFT_CONFIG` | Minecraft `config/t3craft.json` | Override the private paired-client config; `-Dt3craft.config=` also works |
 
-The defaults (muted, no focus) suit unattended agent runs. `tools/launch.ps1` should set
-`AGENTCRAFT_MUTE=0 AGENTCRAFT_FOCUS=1` for real use (when you launch the game yourself; it does
-without `-Dev`). The name the agents call you comes from the Foreman (`--user-name`, see
-foreman/README.md) and reaches the mod in `foreman.status`.
+For unattended runs set `AGENTCRAFT_DEV=1`, `AGENTCRAFT_MUTE=1` and `AGENTCRAFT_FOCUS=0`. Production defaults preserve volume and disable the DevBridge. Old Foreman port/backend switches no longer enable a connection.
 
 ### Focus behaviour (what was verified)
 `RenderSystemMixin` sets the SDL hints `SDL_WINDOW_ACTIVATE_WHEN_SHOWN=0`,

@@ -122,13 +122,13 @@ public final class AgentsFeature {
 			return InteractionResult.PASS;
 		});
 		// right-click an agent: its card (name, state, task, log tail, message/pause/stop)
-		onClick((player, agent) -> Minecraft.getInstance().gui.setScreen(new AgentCardScreen(agent.agentId())));
+		onClick((player, agent) -> dev.agentcraft.client.foreman.T3Projection.openAgent(agent.agentId()));
 		DevBridge.registerScreen("agent", mc -> {
 			String id = AgentCardScreen.defaultAgent();
 			if (id == null) {
 				throw new DevBridge.DevException("no agents (is the Foreman connected?)");
 			}
-			return new AgentCardScreen(id);
+			return dev.agentcraft.client.t3.T3CraftClient.get().studioScreen("agent",id);
 		});
 		DevBridge.register("dev.agents.card", 10_000, "{agent} -> open the agent card for one agent (like right-clicking it)", (req, mc) -> {
 			String id = Fields.of(req).nonBlank("agent");
@@ -136,9 +136,9 @@ public final class AgentsFeature {
 				if (Foreman.state() == null || Foreman.state().agent(id) == null) {
 					throw new DevBridge.DevException("no agent '" + id + "'");
 				}
-				mc.gui.setScreen(new AgentCardScreen(id));
+				dev.agentcraft.client.foreman.T3Projection.openAgent(id);
 				JsonObject o = new JsonObject();
-				o.addProperty("screen", AgentCardScreen.class.getSimpleName());
+				o.addProperty("screen", mc.gui.screen().getClass().getSimpleName());
 				o.addProperty("agent", id);
 				return o;
 			});

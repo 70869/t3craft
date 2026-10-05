@@ -23,9 +23,9 @@ public final class ClientEnv {
 	}
 
 	public static final int DEV_PORT = intValue("AGENTCRAFT_DEV_PORT", 7879);
-	public static final boolean DEV_BRIDGE = flag("AGENTCRAFT_DEV", true);
-	public static final boolean MUTE = flag("AGENTCRAFT_MUTE", true);
-	public static final boolean TAKE_FOCUS = flag("AGENTCRAFT_FOCUS", false);
+	public static final boolean DEV_BRIDGE = flag("AGENTCRAFT_DEV", false);
+	public static final boolean MUTE = flag("AGENTCRAFT_MUTE", false);
+	public static final boolean TAKE_FOCUS = flag("AGENTCRAFT_FOCUS", true);
 	public static final boolean AUTO_WORLD = flag("AGENTCRAFT_AUTOWORLD", true);
 
 	public static String raw(String envName) {

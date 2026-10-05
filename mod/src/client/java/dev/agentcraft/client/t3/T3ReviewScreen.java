@@ -1,0 +1,158 @@
+// Adapted from maxwellyoung/t3craft (MIT), copyright 2026 Maxwell Young.
+// See THIRD-PARTY-NOTICES.md and licenses/t3craft-client-MIT.txt.
+package dev.agentcraft.client.t3;
+
+import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.network.chat.Component;
+import java.util.List;
+
+/** Read-only review of T3's completed checkpoints; feedback returns to the thread composer. */
+final class T3ReviewScreen extends Screen {
+	private final T3CraftClient mod;
+	private final String threadId;
+	private T3Api.Review review;
+	private List<T3Diff.File> files = List.of();
+	private int selected = -1, scroll, fileScroll, horizontal, serial, patchWidth;
+	private boolean loading, closed;
+	private String error;
+	private Button feedback, refresh;
+	private Button previous, next;
+	private List<T3Diff.Line> numbered = List.of();
+	private List<Integer> hunks = List.of();
+
+	T3ReviewScreen(T3CraftClient mod, String threadId) { super(Component.literal("Checkpoint review")); this.mod = mod; this.threadId = threadId; }
+	@Override protected void init() {
+		closed = false;
+		mod.state().setPanelOpen(true);
+		addRenderableWidget(Button.builder(Component.literal("Back"), b -> { mod.focus(threadId); mod.openPanel(); }).bounds(12, height - 30, 54, 20).build());
+		refresh = addRenderableWidget(Button.builder(Component.literal("Refresh"), b -> load()).bounds(72, height - 30, 66, 20).build());
+		previous = addRenderableWidget(Button.builder(Component.literal("Prev"), b -> jump(-1)).bounds(144, height - 30, 40, 20).build());
+		next = addRenderableWidget(Button.builder(Component.literal("Next"), b -> jump(1)).bounds(188, height - 30, 40, 20).build());
+		int feedbackWidth = Math.min(130, width - 244);
+		feedback = addRenderableWidget(Button.builder(Component.literal(feedbackWidth < 100 ? "Feedback" : "Give feedback"), b -> {
+			mod.focus(threadId);
+			String draft = mod.draft(threadId);
+			mod.saveDraft(threadId, draft.isBlank() ? "Feedback on checkpoint " + review.turnCount() + ":\n" : draft);
+			mod.openPanel();
+		}).bounds(width - feedbackWidth - 12, height - 30, feedbackWidth, 20).build());
+		if (review == null && !loading) load();
+		tick();
+	}
+	@Override public void tick() {
+		refresh.active = !loading && mod.state().online(threadId);
+		feedback.active = review != null && mod.state().online(threadId);
+		previous.active = !loading && error == null && hunks.stream().anyMatch(i -> i < scroll);
+		next.active = !loading && error == null && hunks.stream().anyMatch(i -> i > scroll);
+	}
+	void load() {
+		int request = ++serial;
+		loading = true; error = null;
+		T3Api owner = mod.state().apiFor(threadId);
+		mod.state().run(() -> {
+			if (owner == null || owner != mod.state().apiFor(threadId) || !mod.state().online(threadId))
+				throw new java.io.IOException("This thread's machine is offline. Reconnect before loading a review.");
+			T3Api.Review result = owner.review(threadId);
+			Minecraft.getInstance().execute(() -> {
+				if (closed || request != serial || owner != mod.state().apiFor(threadId)) return;
+				review = result; files = T3Diff.files(result.diff()); choose(-1); fileScroll = 0; loading = false;
+			});
+		}, e -> Minecraft.getInstance().execute(() -> {
+			if (closed || request != serial) return;
+			loading = false; error = e.getMessage();
+		}));
+	}
+	T3Api.Review reviewForTest() { return review; }
+	List<T3Diff.File> filesForTest() { return files; }
+	@Override public boolean isPauseScreen() { return false; }
+	@Override public boolean isInGameUi() { return true; }
+	@Override public void removed() { closed = true; serial++; mod.state().setPanelOpen(false); }
+	private int side() { return Math.max(130, Math.min(205, width / 3)); }
+	private int visible() { return Math.max(1, (height - 94) / 20); }
+	private void choose(int file) {
+		selected = file; scroll = 0; horizontal = 0;
+		numbered = file < 0 ? List.of() : T3Diff.numbered(files.get(file));
+		hunks = file < 0 ? List.of() : T3Diff.hunks(files.get(file));
+		patchWidth = file < 0 ? 0 : files.get(file).lines().stream().mapToInt(font::width).max().orElse(0);
+		tick();
+	}
+	private void jump(int direction) {
+		if (loading || error != null) return;
+		var candidates = hunks.stream().filter(i -> direction > 0 ? i > scroll : i < scroll).toList();
+		if (!candidates.isEmpty()) scroll = direction > 0 ? candidates.getFirst() : candidates.getLast();
+		tick();
+	}
+	int scrollForTest() { return scroll; }
+	@Override public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+		if (event.button() == InputConstants.MOUSE_BUTTON_LEFT && event.x() >= 12 && event.x() < side() && event.y() >= 58 && event.y() < height - 36) {
+			int index = fileScroll + (int) ((event.y() - 58) / 20) - 1;
+			if (index >= -1 && index < files.size()) choose(index);
+			return true;
+		}
+		return super.mouseClicked(event, doubleClick);
+	}
+	@Override public boolean mouseScrolled(double x, double y, double h, double v) {
+		if (x < side()) fileScroll = Math.max(0, Math.min(fileScroll - (int) v, Math.max(0, files.size() + 1 - visible())));
+		else scroll = Math.max(0, scroll - (int) (v * 3));
+		return true;
+	}
+	@Override public boolean keyPressed(KeyEvent event) {
+		if (event.key() == InputConstants.KEY_PAGEDOWN) { jump(1); return true; }
+		if (event.key() == InputConstants.KEY_PAGEUP) { jump(-1); return true; }
+		if (event.key() == InputConstants.KEY_DOWN) { scroll += 3; return true; }
+		if (event.key() == InputConstants.KEY_UP) { scroll = Math.max(0, scroll - 3); return true; }
+		if (event.key() == InputConstants.KEY_RIGHT) { horizontal += 40; return true; }
+		if (event.key() == InputConstants.KEY_LEFT) { horizontal = Math.max(0, horizontal - 40); return true; }
+		if (event.key() == InputConstants.KEY_HOME) { scroll = horizontal = 0; return true; }
+		if (event.key() == InputConstants.KEY_F5 && refresh.active) { load(); return true; }
+		return super.keyPressed(event);
+	}
+	@Override public void extractRenderState(GuiGraphicsExtractor g, int mx, int my, float delta) {
+		g.fill(8, 8, width - 8, height - 8, 0xF0222529);
+		g.text(font, T3Hud.ellipsize(font, review == null ? "Checkpoint review" : review.title(), width - 32), 16, 17, 0xFFE5E7EB, false);
+		String meta = review == null ? "Read-only · completed checkpoints" : "Checkpoint " + review.turnCount() + " · " + files.size() + " files · old / new lines";
+		if (!mod.state().online(threadId)) meta += " · OFFLINE / last loaded";
+		g.text(font, T3Hud.ellipsize(font, meta, width - 32), 16, 34, 0xFF9CA3AF, false);
+		for (int i = fileScroll; i < Math.min(files.size() + 1, fileScroll + visible()); i++) {
+			int y = 58 + (i - fileScroll) * 20;
+			if (selected == i - 1) g.fill(12, y, side(), y + 19, 0xFF41464E);
+			g.text(font, T3Hud.ellipsize(font, i == 0 ? "Agent reply" : files.get(i - 1).path(), side() - 24), 16, y + 5, 0xFFE5E7EB, false);
+		}
+		int x = side() + 16, available = Math.max(20, width - x - 16);
+		g.enableScissor(x, 56, width - 12, height - 40);
+		if (review == null || selected < 0 || loading || error != null) {
+			String text = error != null ? "Could not load review:\n" + error : loading ? "Loading completed checkpoint…"
+				: review.reply() + (files.isEmpty() ? "\n\nNo file changes in this checkpoint range." : "\n\nChoose a file to inspect its patch.\nArrows: scroll / pan · Prev/Next or PgUp/PgDn: changes · F5: refresh");
+			var lines = font.split(Component.literal(text), available);
+			scroll = Math.min(scroll, Math.max(0, lines.size() - Math.max(1, (height - 100) / (font.lineHeight + 2))));
+			int y = 60;
+			for (int i = scroll; i < lines.size() && y < height - 40; i++, y += font.lineHeight + 2) g.text(font, lines.get(i), x, y, error == null ? 0xFFE5E7EB : 0xFFFF9772, false);
+		} else {
+			var lines = numbered;
+			// Allow the final hunk to sit at the top even when it is shorter than the viewport.
+			scroll = Math.min(scroll, Math.max(0, lines.size() - 1));
+			int digits = Math.max(2, Integer.toString(lines.stream().mapToInt(line -> Math.max(line.oldLine() == null ? 0 : line.oldLine(), line.newLine() == null ? 0 : line.newLine())).max().orElse(0)).length());
+			int column = font.width("9".repeat(digits)) + 4, gutter = column * 2 + 4;
+			horizontal = Math.min(horizontal, Math.max(0, patchWidth - (available - gutter)));
+			int y = 60;
+			for (int i = scroll; i < lines.size() && y < height - 40; i++, y += font.lineHeight) {
+				String line = lines.get(i).text();
+				int color = line.startsWith("+") ? 0xFF9FE6B3 : line.startsWith("-") ? 0xFFFFA9A9 : line.startsWith("@@") ? 0xFF91C9FF : 0xFFE5E7EB;
+				g.enableScissor(x + gutter, 56, width - 12, height - 40);
+				g.text(font, line, x + gutter - horizontal, y, color, false);
+				g.disableScissor();
+				String old = lines.get(i).oldLine() == null ? "" : lines.get(i).oldLine().toString();
+				String revised = lines.get(i).newLine() == null ? "" : lines.get(i).newLine().toString();
+				g.text(font, old, x + column - 4 - font.width(old), y, 0xFF9CA3AF, false);
+				g.text(font, revised, x + column * 2 - 4 - font.width(revised), y, 0xFF9CA3AF, false);
+			}
+		}
+		g.disableScissor();
+		super.extractRenderState(g, mx, my, delta);
+	}
+}

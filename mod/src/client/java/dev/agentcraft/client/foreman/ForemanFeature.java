@@ -31,7 +31,7 @@ public final class ForemanFeature {
 
 	public static void init() {
 		int port = ClientEnv.intValue("AGENTCRAFT_PORT", 7878);
-		boolean enabled = ClientEnv.flag("AGENTCRAFT_FOREMAN", true);
+		boolean enabled = false; // T3's paired client owns the connection; no external Foreman.
 		URI uri = URI.create("ws://127.0.0.1:" + port);
 		String modVersion = FabricLoader.getInstance().getModContainer(AgentCraft.MOD_ID)
 			.map(c -> c.getMetadata().getVersion().getFriendlyString()).orElse("0");
@@ -40,7 +40,8 @@ public final class ForemanFeature {
 		// Executor: the client thread. Minecraft.getInstance() is resolved lazily (it does not exist yet during init).
 		ForemanLink link = new ForemanLink(uri, modVersion, state, r -> Minecraft.getInstance().execute(r), enabled);
 		Foreman.install(state, link);
-		ClientLifecycleEvents.CLIENT_STARTED.register(mc -> link.start());
+		new dev.agentcraft.client.t3.T3CraftClient().onInitializeClient();
+		T3Projection.init(state);
 		ClientLifecycleEvents.CLIENT_STOPPING.register(mc -> link.stop());
 
 		DevBridge.addStateContributor((mc, o) -> o.add("foreman", stateJson()));

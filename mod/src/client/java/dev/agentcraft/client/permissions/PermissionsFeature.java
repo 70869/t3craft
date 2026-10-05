@@ -25,10 +25,7 @@ public final class PermissionsFeature {
 	}
 
 	public static void init() {
-		DevBridge.registerScreen("permission", mc -> {
-			Decision d = DecisionQueue.firstOfKind(DecisionKind.PERMISSION);
-			return d != null ? new DecisionScreen(d.id(), null) : DecisionScreen.preview(sample());
-		});
+		DevBridge.registerScreen("permission", mc -> dev.agentcraft.client.t3.T3CraftClient.get().studioScreen("decisions",null));
 	}
 
 	/** A representative permission prompt (the sim's "npm install" one), for previews. */

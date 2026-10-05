@@ -51,7 +51,7 @@ public final class DecisionsFeature {
 	public static void init() {
 		BlockEntityRenderers.register(ModBlockEntities.DECISION_PODIUM, ctx -> new DecisionPodiumRenderer());
 		Keys.ensureRegistered();
-		DevBridge.registerScreen("decision", mc -> new DecisionScreen(null, null));
+		DevBridge.registerScreen("decision", mc -> dev.agentcraft.client.t3.T3CraftClient.get().studioScreen("decisions",null));
 		StationInteractions.onUse(ModBlocks.DECISION_PODIUM, (player, pos, state, be) -> openQueue(null, null));
 		ClientTickEvents.END_CLIENT_TICK.register(mc -> {
 			if (mc.player == null) {
@@ -84,7 +84,7 @@ public final class DecisionsFeature {
 	/** Open the decision screen at {@code decisionId} (null = the queue head). */
 	public static void openQueue(@Nullable String decisionId, @Nullable Screen parent) {
 		Minecraft mc = Minecraft.getInstance();
-		mc.gui.setScreen(new DecisionScreen(decisionId, parent));
+		dev.agentcraft.client.t3.T3CraftClient.get().openDecisions();
 	}
 
 	/** An answer was sent from this client (HUD/podium can stop counting it right away). */

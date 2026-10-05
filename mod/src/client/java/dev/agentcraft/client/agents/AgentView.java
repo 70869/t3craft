@@ -98,10 +98,10 @@ public final class AgentView {
 	/** One line for the nameplate under the name. */
 	public String activityLine() {
 		if (stale) {
-			return "Foreman offline";
+			return dev.agentcraft.client.foreman.Foreman.isT3() ? "T3 machine offline" : "Foreman offline";
 		}
 		if (!active) {
-			return "off shift";
+			return dev.agentcraft.client.foreman.Foreman.isT3() ? "No T3 chat attached" : "off shift";
 		}
 		if (paused) {
 			return activity.isEmpty() ? "paused" : "paused · " + activity;

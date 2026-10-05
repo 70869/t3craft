@@ -1,3 +1,5 @@
+> Historical AgentCraft reference. Foreman/simulator commands and standalone AI flows below are obsolete in T3Craft. Use [the current guide](USER-GUIDE.md) and [native integration reference](T3-INTEGRATION.md).
+
 # AgentCraft — Spec
 
 Minecraft as a spatial UI for real, multi-agent Claude work. The user should be able to use this

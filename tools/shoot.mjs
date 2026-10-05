@@ -19,7 +19,6 @@
 
 import fs from 'node:fs';
 import { DevClient, DEFAULT_PORT } from './lib/devclient.mjs';
-import { ForemanClient, DEFAULT_FOREMAN_PORT } from './lib/foremanclient.mjs';
 import { loadScene, runScene } from './lib/scene.mjs';
 
 const argv = process.argv.slice(2);
@@ -37,7 +36,7 @@ for (let i = 0; i < argv.length; i++) {
   else if (a === '--manifest') manifest = argv[++i];
   else if (a === '--prefix') prefix = argv[++i];
   else if (a === '--anchors') anchorsFile = argv[++i];
-  else if (a === '--foreman') foremanPort = argv[i + 1] && /^\d+$/.test(argv[i + 1]) ? Number(argv[++i]) : DEFAULT_FOREMAN_PORT;
+  else if (a === '--foreman') throw new Error('The standalone Foreman was removed. Use native T3 screens through the DevBridge.');
   else if (!a.startsWith('--') && !sceneFile) sceneFile = a;
 }
 const flag = (f) => argv.includes(f);
@@ -48,7 +47,6 @@ if (!sceneFile) {
 
 const scene = loadScene(sceneFile);
 const log = (m) => process.stderr.write(`[shoot] ${m}\n`);
-if (foremanPort === null && scene.foreman?.connect) foremanPort = scene.foreman.port ?? DEFAULT_FOREMAN_PORT;
 
 let dev;
 try {
@@ -62,14 +60,6 @@ try {
 }
 
 let foreman = null;
-if (foremanPort !== null) {
-  try {
-    foreman = await ForemanClient.connect({ port: foremanPort, timeoutMs: 20_000, client: 'shoot' });
-    log(`Foreman: ${foreman.url} (${foreman.state.foreman?.backend ?? '?'}${foreman.state.foreman?.showcase ? ', showcase' : ''})`);
-  } catch (e) {
-    log(`Foreman not connected (${e.message}); shots that need it are skipped`);
-  }
-}
 
 let summary;
 try {

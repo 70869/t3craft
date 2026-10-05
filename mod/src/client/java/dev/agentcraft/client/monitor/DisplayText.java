@@ -17,6 +17,7 @@ public final class DisplayText {
 
 	/** Why there is nothing to show yet (no snapshot ever received): the HUD pill's wording. */
 	public static String noData(@Nullable ForemanState s) {
+		if (dev.agentcraft.client.t3.T3CraftClient.get() != null) return "Pair T3 Code in Connections";
 		if (s == null || s.link().phase() == LinkStatus.Phase.DISABLED) {
 			return "Foreman link off";
 		}
