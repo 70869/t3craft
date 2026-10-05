@@ -1,6 +1,6 @@
 # Install T3Craft with Prism Launcher
 
-## Easiest setup on Windows
+## Install on Windows
 
 Install [Prism Launcher](https://prismlauncher.org/download/) and open T3 Code. Sign into your Microsoft Minecraft account in **Prism → Settings → Accounts**.
 
@@ -24,6 +24,12 @@ To install without launching, omit `-Launch`. To defer automatic pairing, add `-
 
 Repeat the installer to update. Close the native game first. Worlds, options and pairing are preserved.
 
+## Install on macOS or Linux
+
+Download the **T3Craft 26.3 Native** ZIP attached to the [1.0.0 release](https://github.com/70869/agentcraft/releases/tag/v1.0.0). In Prism Launcher select **Add Instance → Import**, choose the ZIP, then sign in to your Microsoft account and launch the instance. Prism stores instances in its configured instances folder; its default data folders are `~/Library/Application Support/PrismLauncher` on macOS and `~/.local/share/PrismLauncher` on Linux. Flatpak Prism uses `~/.var/app/org.prismlauncher.PrismLauncher/data/PrismLauncher`.
+
+The import ZIP includes T3Craft and Fabric API. Prism can manage the Java runtime; if you select one manually, use Java 25 or newer. Keep T3 Code running, open Connections in Minecraft, and pair with a link from T3 Settings → Connections. The Windows-only `.cmd` installer is not used on macOS or Linux.
+
 ## Compatibility
 
 | Component | This build |
@@ -33,12 +39,13 @@ Repeat the installer to update. Close the native game first. Worlds, options and
 | Fabric API | 0.161.0+26.3 |
 | Java | 25+ |
 | T3 pairing | Paired environment client, protocol 2 verified live |
+| Desktop OS | Windows, macOS, Linux (release build matrix; native game launch verified on Windows) |
 
 Existing Minecraft 1.21.x Fabric instances and ATM10/NeoForge cannot load this JAR. Use the separate instance. The internal mod ID is `agentcraft`; install only one AgentCraft/T3Craft JAR in an instance.
 
 ## Importable ZIP
 
-The installer writes **`artifacts/prism/T3Craft-26.3-Native.zip`**.
+The Windows installer and cross-platform release packager create **`artifacts/prism/T3Craft-26.3-Native.zip`**.
 
 In Prism use **Add Instance → Import**, select that ZIP, and finish the import. The ZIP contains the instance definition, T3Craft and Fabric API. It contains no credentials, chat history, account files or machine-specific Java path. Select/download Java 25 through Prism if automatic Java selection does not find it, then pair in the game.
 
@@ -48,7 +55,7 @@ Prism references: [creating an instance](https://prismlauncher.org/wiki/getting-
 
 Create a **Minecraft 26.3** instance in Prism. In **Edit → Version**, install **Fabric Loader 0.19.5**. Add these files under **Edit → Mods**:
 
-- `mod/build/libs/t3craft-0.2.0.jar`
+- `mod/build/libs/t3craft-1.0.0.jar`
 - Fabric API `0.161.0+26.3`, also included in the generated import ZIP.
 
 Select Java 25+, launch, press backtick, and pair via Connections. The world auto-load setting is on in the generated dedicated profile; manual installations follow the mod's default world behavior.
@@ -82,5 +89,4 @@ The detector does not read account credentials. Its output is ignored by Git.
 
 **Automatic local pairing unavailable:** Use the game's Connections screen. The installer still prepares the profile.
 
-On 2026-10-05 the native mod connected in a Minecraft development client to the live T3 environment. The dedicated native Prism instance is installed and paired, but its launch has not yet been verified because the older Java game still holds shared library files.
-
+On 2026-10-05 the native mod connected in a Minecraft development client to the live T3 environment. The dedicated Windows Prism instance launched and showed the HQ and residents. The release build matrix checks compilation on Windows, macOS and Linux; native game launches on macOS and Linux have not yet been verified.

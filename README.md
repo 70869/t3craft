@@ -2,13 +2,15 @@
 
 Your T3 Code conversations inside AgentCraft's Minecraft studio. The native Fabric mod connects directly to paired T3 Code machines. T3 owns the chats, providers, workspaces and execution.
 
-## Install on Windows with Prism
+## Install with Prism
 
-1. Open T3 Code and sign into your Minecraft account in Prism.
-2. Double-click **[Install-T3Craft.cmd](Install-T3Craft.cmd)**.
-3. Launch **T3Craft 26.3 Native**. Press **backtick** (`) for your chats.
+On Windows, open T3 Code, sign into your Minecraft account in Prism, then double-click **[Install-T3Craft.cmd](Install-T3Craft.cmd)**.
 
-The installer downloads and verifies Java 25 if needed, builds the mod, installs a dedicated Prism instance, and pairs to the running local T3 app when supported. It requires internet on first install. No Node, Claude SDK, Foreman process or separate AI account is needed to play.
+On Windows, macOS, or Linux, download the **T3Craft 26.3 Native** import ZIP from the [1.0.0 release](https://github.com/70869/agentcraft/releases/tag/v1.0.0). In Prism choose **Add Instance → Import**, select the ZIP, sign in to your Minecraft account, and launch the instance. Press **backtick** (`) to open Connections and pair with T3 Code.
+
+The Windows installer builds and installs from source. Linux and macOS users can also build the same platform-neutral Fabric mod with Java 25+ using `./mod/gradlew -p mod build`; the release ZIP is the simplest install path on all three platforms.
+
+The Windows installer downloads and verifies Java 25 if needed, builds the mod, installs a dedicated Prism instance, and pairs to the running local T3 app when supported. It requires internet on first install. No Node, Claude SDK, Foreman process or separate AI account is needed to play.
 
 If automatic pairing is unavailable, use **Connections** in the game and paste a fresh link from **T3 Settings → Connections**. Keep T3 Code running while playing.
 
@@ -29,6 +31,8 @@ Six original HQ characters represent selected chats, with saved desk assignments
 ## Compatibility
 
 Minecraft **26.3**, Fabric Loader **0.19.5**, Fabric API **0.161.0+26.3**, Java **25+**. The installed profile is separate from existing 1.21.x or NeoForge packs.
+
+The Fabric mod and Prism import target Windows, macOS, and Linux. The import ZIP lets Prism manage the Java runtime; use a Java 25+ runtime if configuring Java yourself. GitHub Actions compiles the release on all three operating systems. The game has been launched on Windows; macOS and Linux still need native in-game launch verification.
 
 The internal mod ID remains `agentcraft` for existing assets and worlds. Install one AgentCraft/T3Craft JAR per instance.
 
