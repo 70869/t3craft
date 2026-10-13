@@ -1,5 +1,9 @@
 # T3Craft
 
+![T3Craft promotional cover](assets-src/marketing/t3craft-cover-1.0.1.png)
+
+*Promotional artwork; [actual in-game screenshots](assets-src/marketing) are included separately.*
+
 Your T3 Code workspace inside a modern Minecraft campus office. The native Fabric mod connects directly to paired T3 Code machines. T3 owns the chats, providers, workspaces and execution.
 
 The primary destinations are Chat, Your work, Workspace and Campus. Workspace tools are searchable; conversation and NPC actions follow the current request, review, run or failure state. Advanced forms retain their fields across Connections, and terminal input remains until acknowledged.

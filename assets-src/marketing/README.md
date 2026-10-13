@@ -9,3 +9,5 @@ Use case: ads-marketing. Asset type: polished wide 16:9 cover art for the T3Craf
 ## Companion icon prompt
 
 Create a square 1:1 project icon for T3Craft, matching this reference cover's blue friendly blocky robot and warm voxel office aesthetic. Close-up of the blue cube robot head and small shoulders, cyan pixel eyes on dark face panel, simple warm dark office background. Crisp block-built Minecraft voxel geometry and pixel textures, clear silhouette, readable at 64 pixels, centered subject with safe margins. No text or lettering, no border, no extra characters. This is a companion project icon to the reference cover.
+
+Modrinth prohibits AI-generated project images. These generated assets are for GitHub and other contexts that permit them. The Modrinth icon and gallery use actual in-game screenshots.

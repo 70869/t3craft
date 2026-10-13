@@ -13,9 +13,12 @@ Publish as a **modpack** so new installations include the authored world, Fabric
 - License: MIT
 - Source: https://github.com/70869/t3craft
 - Issues: https://github.com/70869/t3craft/issues
-- Icon: `mod/src/main/resources/assets/agentcraft/icon.png`
+- Icon: `assets-src/marketing/t3craft-campus-screenshot.jpg` (actual in-game screenshot)
+- Gallery: campus screenshot and `assets-src/marketing/t3craft-sidebar-screenshot.png`
 - Upload: `artifacts/release-1.0.1/T3Craft-1.0.1.mrpack`
 - Changelog: `docs/RELEASE-1.0.1.md`
+
+Modrinth prohibits AI-generated project images. The generated cover and robot icon are published on GitHub; only actual gameplay screenshots represent this Modrinth project. Disclose AI-assisted code/text, generative AI functionality, the adapted MIT paired client, and external workspace interactions in the project's content disclosures.
 
 ## Listing description
 
