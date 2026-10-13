@@ -8,7 +8,7 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
 
 /** Local character identity belongs to this world, independently of its linked T3 chat. */
-final class T3NpcNameScreen extends Screen {
+final class T3NpcNameScreen extends T3MenuScreen {
 	private final T3CraftClient mod;
 	private final String cast;
 	private final Screen parent;
@@ -27,7 +27,7 @@ final class T3NpcNameScreen extends Screen {
 		name = addRenderableWidget(new EditBox(font, left, top + 46, panelWidth, 20, Component.literal("NPC name")));
 		name.setMaxLength(OfficeRoster.MAX_NPC_NAME_LENGTH); name.setValue(draft);
 		save = addRenderableWidget(Button.builder(Component.literal("Save"), b -> saveName()).bounds(left, top + 124, 70, 20).build());
-		addRenderableWidget(Button.builder(Component.literal("Reset name"), b -> name.setValue(dev.agentcraft.Cast.get(cast).name())).bounds(left + 78, top + 124, 94, 20).build());
+		addRenderableWidget(Button.builder(Component.literal("Reset name"), b -> name.setValue(mod.defaultNpcName(cast))).bounds(left + 78, top + 124, 94, 20).build());
 		addRenderableWidget(Button.builder(Component.literal("Cancel"), b -> onClose()).bounds(left + panelWidth - 70, top + 124, 70, 20).build());
 		name.setResponder(value -> { draft = value; message = ""; updateSave(); });
 		updateSave();
@@ -45,16 +45,16 @@ final class T3NpcNameScreen extends Screen {
 	}
 	@Override public void onClose() { minecraft.gui.setScreen(parent); }
 	@Override public boolean isPauseScreen() { return false; }
-	@Override public boolean isInGameUi() { return true; }
+	@Override public boolean isInGameUi() { return false; }
 	@Override public void extractRenderState(GuiGraphicsExtractor g, int mx, int my, float delta) {
-		g.fill(left - 12, top - 12, left + panelWidth + 12, top + 156, 0xF0222529);
-		g.text(font, "Rename NPC", left, top, 0xFFFFFFFF, false);
-		g.text(font, "Saved for this world and dimension", left, top + 20, 0xFFA8A8A8, false);
+		paper(g, left - 12, top - 12, left + panelWidth + 12, top + 156);
+		g.text(font, "Rename NPC", left, top, INK, false);
+		g.text(font, "Saved for this world and dimension", left, top + 20, MUTED, false);
 		String hint = message.isEmpty() ? OfficeRoster.npcNameError(name.getValue()) : message;
 		if (hint == null) hint = "Up to 32 characters";
 		int y = top + 78;
 		for (var line : font.split(Component.literal(hint), panelWidth)) {
-			g.text(font, line, left, y, message.isEmpty() ? 0xFFA8A8A8 : 0xFFFF9772, false);
+			g.text(font, line, left, y, message.isEmpty() ? MUTED : ERROR, false);
 			y += font.lineHeight + 2;
 		}
 		super.extractRenderState(g, mx, my, delta);

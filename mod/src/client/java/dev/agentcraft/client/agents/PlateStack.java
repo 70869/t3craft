@@ -9,8 +9,8 @@ import net.minecraft.util.Mth;
 
 /**
  * What stacks on top of an agent's nameplate, in plate space (FEATURES.md "plate space"):
- * the speech bubble right above the plate, and above that the pulsing clay "!" while the agent
- * needs you (waiting on a decision or on your merge). {@link #measure} runs at extract time and
+ * the speech bubble right above the plate, a nearby thought expression, or the pulsing clay "!"
+ * for a distant pending request. {@link #measure} runs at extract time and
  * tells {@link PlateLayout} how much room to reserve, so a bubble never covers another agent's
  * plate: the other plates are lifted clear of it like they are of the plate itself.
  */
@@ -37,7 +37,9 @@ final class PlateStack {
 		}
 		if (s.exclaim > 0.05f) {
 			h += EXCLAIM_H;
-			w = Math.max(w, EXCLAIM_W);
+			w = Math.max(w, AgentExpressions.visible(s) ? AgentExpressions.WIDTH : EXCLAIM_W);
+		} else if (AgentExpressions.visible(s)) {
+			h += AgentExpressions.HEIGHT; w = Math.max(w, AgentExpressions.WIDTH);
 		}
 		s.stackHeight = h;
 		s.stackWidth = w;
@@ -60,7 +62,10 @@ final class PlateStack {
 			}
 		}
 		if (s.exclaim > 0.05f) {
-			exclaim(ps, c, top, s.exclaim, s.timeSeconds, light);
+			if (AgentExpressions.visible(s)) AgentExpressions.submit(s, ps, c, top, light);
+			else exclaim(ps, c, top, s.exclaim, s.timeSeconds, light);
+		} else if (AgentExpressions.visible(s)) {
+			AgentExpressions.submit(s, ps, c, top, light);
 		}
 		ps.popPose();
 	}

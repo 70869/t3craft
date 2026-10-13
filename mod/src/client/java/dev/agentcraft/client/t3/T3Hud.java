@@ -28,7 +28,10 @@ final class T3Hud implements HudElement {
 	}
 
 	static int color(T3State.Status status) {
-		return switch (status) { case WORKING -> 0xFF5EA8FF; case NEEDS_YOU -> 0xFFFFB02E; case DONE -> 0xFF4ADE80; case ERROR -> 0xFFF87171; case IDLE -> 0xFF9CA3AF; };
+		return switch (status) { case WORKING -> 0xFF5EA8FF; case NEEDS_YOU -> 0xFFFFB02E; case DONE -> 0xFF4ADE80; case ERROR -> 0xFFF87171; case IDLE -> dev.agentcraft.client.ui.T3Theme.color("textMuted"); };
+	}
+	static int paperColor(T3State.Status status) {
+		return switch (status) { case WORKING -> T3MenuScreen.ACCENT; case NEEDS_YOU -> dev.agentcraft.client.ui.T3Theme.color("warningForeground"); case DONE -> T3MenuScreen.GOOD; case ERROR -> T3MenuScreen.ERROR; case IDLE -> T3MenuScreen.MUTED; };
 	}
 
 	static String elapsed(Instant since) {
@@ -56,9 +59,9 @@ final class T3Hud implements HudElement {
 			// Nothing followed is active, but threads elsewhere are waiting: just the count.
 			Font font = minecraft.font;
 			String text = waitingAnywhere + " waiting  [`]";
-			graphics.fill(4, 4, 4 + 12 + font.width(text) + 6, 18, 0xA0101014);
+			graphics.fill(4, 4, 4 + 12 + font.width(text) + 6, 18, dev.agentcraft.client.ui.T3Theme.color("surface"));
 			graphics.fill(8, 9, 12, 13, color(T3State.Status.NEEDS_YOU));
-			graphics.text(font, text, 16, 7, 0xFF9CA3AF, false);
+			graphics.text(font, text, 16, 7, dev.agentcraft.client.ui.T3Theme.color("textMuted"), false);
 			return;
 		}
 		if (shown == null) return;
@@ -89,17 +92,17 @@ final class T3Hud implements HudElement {
 		int x = 4;
 		int y = 4;
 		int width = 12 + font.width(title) + 8 + font.width(text) + font.width(suffix) + 6;
-		graphics.fill(x, y, x + width, y + 14, 0xA0101014);
+		graphics.fill(x, y, x + width, y + 14, dev.agentcraft.client.ui.T3Theme.color("surface"));
 		int dotColor = color(shown.status());
 		// Pulse the dot while working so the corner reads as alive at a glance.
 		if (shown.status() == T3State.Status.WORKING && (System.currentTimeMillis() / 500) % 2 == 0) dotColor = 0xFF2F5F99;
 		graphics.fill(x + 4, y + 5, x + 8, y + 9, dotColor);
 		int cursor = x + 12;
-		graphics.text(font, title, cursor, y + 3, 0xFFE5E7EB, false);
+		graphics.text(font, title, cursor, y + 3, dev.agentcraft.client.ui.T3Theme.color("text"), false);
 		cursor += font.width(title) + 8;
 		graphics.text(font, text, cursor, y + 3, color(shown.status()), false);
 		cursor += font.width(text);
-		graphics.text(font, suffix, cursor, y + 3, 0xFF9CA3AF, false);
+		graphics.text(font, suffix, cursor, y + 3, dev.agentcraft.client.ui.T3Theme.color("textMuted"), false);
 	}
 
 	static String ellipsize(Font font, String text, int maxWidth) {

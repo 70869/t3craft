@@ -17,11 +17,17 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
+      - id: target
+        shell: bash
+        run: echo "java=$(sed -n 's/^java_version=//p' mod/gradle.properties)" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '25'
+          java-version: ${{ steps.target.outputs.java }}
       - uses: gradle/actions/setup-gradle@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
       - name: Build Fabric mod
         run: ./gradlew build
         working-directory: mod
@@ -31,25 +37,38 @@ jobs:
         working-directory: mod
         if: runner.os == 'Windows'
       - name: Validate Prism release package
-        run: python3 tools/package-prism.py --output-dir .local/prism-check
-        if: runner.os == 'Linux'
+        run: python tools/package-prism.py --output-dir .local/prism-check
+      - name: Check package privacy and compatibility regressions
+        run: python -m unittest discover -s tools -p test_release_package.py
+      - name: Check installer and update recovery in disposable profiles
+        run: python tools/check-installation.py --package .local/prism-check/T3Craft-Prism.zip
+        if: runner.os == 'Windows'
+      - name: Check paired-client protocol compatibility
+        run: python tools/check-workflows.py
 
   publish:
     needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - id: target
+        shell: bash
+        run: echo "java=$(sed -n 's/^java_version=//p' mod/gradle.properties)" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '25'
+          java-version: ${{ steps.target.outputs.java }}
       - uses: gradle/actions/setup-gradle@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
       - name: Confirm release tag matches project version
         shell: bash
         run: |
           version="$(sed -n 's/^mod_version=//p' mod/gradle.properties)"
           test "$GITHUB_REF_NAME" = "v$version"
           echo "RELEASE_VERSION=$version" >> "$GITHUB_ENV"
+          echo "MINECRAFT_VERSION=$(sed -n 's/^minecraft_version=//p' mod/gradle.properties)" >> "$GITHUB_ENV"
       - name: Build release JAR
         run: ./gradlew build
         working-directory: mod
@@ -58,4 +77,4 @@ jobs:
       - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" artifacts/prism/T3Craft-26.3-Native.zip "mod/build/libs/t3craft-$RELEASE_VERSION.jar" --title "T3Craft $RELEASE_VERSION" --generate-notes --verify-tag
+        run: gh release create "$GITHUB_REF_NAME" "artifacts/prism/T3Craft-$RELEASE_VERSION-mc$MINECRAFT_VERSION-fabric.zip" artifacts/prism/T3Craft-Prism.zip "artifacts/prism/T3Craft-$MINECRAFT_VERSION-Native.zip" artifacts/prism/T3Craft-Windows-Installer.zip artifacts/prism/compatibility.json artifacts/prism/SHA256SUMS.txt "mod/build/libs/t3craft-$RELEASE_VERSION.jar" --title "T3Craft $RELEASE_VERSION" --generate-notes --verify-tag

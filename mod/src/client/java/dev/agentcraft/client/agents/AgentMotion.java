@@ -3,6 +3,7 @@ package dev.agentcraft.client.agents;
 import dev.agentcraft.layout.Anchor;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
@@ -10,8 +11,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * Deterministic walking for one client-side agent: follows a path (from {@link GridPathfinder}) to
  * its target anchor at a calm walking pace, turning smoothly, then turns to the anchor's yaw. No
- * physics, no collisions, no server: the position is a pure function of the path and time, so it is
- * identical every run (good for QA) and never jitters.
+	 * server physics: a checked step yields to nearby residents without losing the route.
  *
  * <p>Pacing (Phase 3): agents ease into their stride over a few steps, slow down over the last
  * block before a spot (the vanilla walk cycle follows the real distance moved, so the legs slow
@@ -43,6 +43,20 @@ public final class AgentMotion {
 	private int delay;
 	private long arrivals;
 	private @Nullable Float facing;
+	private int crowdWait;
+	public int crowdWait() { return crowdWait; }
+
+	/** A checked local detour keeps the destination and unconsumed route. */
+	public void sidestep(Vec3 point) {
+		detour(List.of(point));
+	}
+
+	public void detour(List<Vec3> points) {
+		if (walking && next < path.size()) {
+			path.addAll(next, points);
+			crowdWait = 0;
+		}
+	}
 
 	public @Nullable Anchor target() {
 		return target;
@@ -51,6 +65,8 @@ public final class AgentMotion {
 	public boolean walking() {
 		return walking;
 	}
+	/** Hold position when a player changes the next part of a route; manager replans it. */
+	public void stop() { walking = false; speed = 0; path.clear(); next = 0; delay = 0; crowdWait = 0; }
 
 	/** Walking or about to (waiting out the start delay). */
 	public boolean leaving() {
@@ -115,6 +131,7 @@ public final class AgentMotion {
 		speed = 0;
 		delay = 0;
 		facing = null;
+		crowdWait = 0;
 		return a.pos();
 	}
 
@@ -136,6 +153,7 @@ public final class AgentMotion {
 		walking = next < path.size();
 		placed = true;
 		delay = was ? 0 : Math.max(0, delayTicks);
+		crowdWait = 0;
 		if (!was) {
 			speed = 0;
 		}
@@ -146,6 +164,11 @@ public final class AgentMotion {
 	 * yaw.
 	 */
 	public Vec3 step(Vec3 pos) {
+		return step(pos, point -> true);
+	}
+
+	/** Check each proposed segment before consuming it; blocked walkers retain their path. */
+	public Vec3 step(Vec3 pos, Predicate<Vec3> clear) {
 		if (target == null) {
 			return pos;
 		}
@@ -192,12 +215,19 @@ public final class AgentMotion {
 				}
 			}
 			double dist = d.length();
+			Vec3 proposed = dist <= budget ? goal : p.add(d.scale(budget / dist));
+			if (!clear.test(proposed)) {
+				crowdWait++;
+				speed = 0;
+				return p;
+			}
+			crowdWait = 0;
 			if (dist <= budget) {
-				p = goal;
+				p = proposed;
 				budget -= dist;
 				next++;
 			} else {
-				p = p.add(d.scale(budget / dist));
+				p = proposed;
 				budget = 0;
 			}
 		}

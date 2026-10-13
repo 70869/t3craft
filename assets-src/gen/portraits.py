@@ -36,6 +36,9 @@ def make(skin, ring):
 
 def build():
     cast = json.load(open(ROOT / "cast.json", encoding="utf-8"))["agents"]
+    from skins import CAST
+    originals = list(cast)
+    cast += [{"id": cid, "color": originals[i % len(originals)]["color"]} for i, cid in enumerate(CAST) if cid not in {a["id"] for a in originals}]
     out = OUT / "textures" / "gui" / "portrait"
     for a in cast:
         skin = Image.open(OUT / "textures" / "entity" / "agent" / f"{a['id']}.png").convert("RGBA")

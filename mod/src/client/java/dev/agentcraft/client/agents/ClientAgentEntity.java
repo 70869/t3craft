@@ -83,7 +83,8 @@ public class ClientAgentEntity extends AgentEntity implements ClientAvatarEntity
 		this.yHeadRotO = this.yHeadRot;
 		this.xRotO = this.getXRot();
 		Vec3 before = position();
-		Vec3 after = motion.step(before);
+		if (motion.walking() && !AgentManager.get().canAdvance(this)) motion.stop();
+		Vec3 after = motion.step(before, point -> AgentManager.get().crowdClear(this, before, point));
 		if (!after.equals(before)) {
 			this.setPos(after);
 		}

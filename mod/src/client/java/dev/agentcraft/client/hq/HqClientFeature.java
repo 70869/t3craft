@@ -51,6 +51,7 @@ public final class HqClientFeature {
 		dev.agentcraft.client.world.StationInteractions.onUse(dev.agentcraft.block.ModBlocks.STATUS_LAMP,(player,pos,state,be)->{
 			if(!Foreman.isT3() || !(be instanceof StatusLampBlockEntity lamp)) return;
 			var client=dev.agentcraft.client.t3.T3CraftClient.get(); String binding=lamp.binding();
+			if (binding.equals("goal:atrium")) { client.openDisplay("atrium", "feed"); return; }
 			if(binding.startsWith("agent:")) client.openAgent(binding.substring(6));
 			else if(binding.equals("decisions")) client.openDecisions();
 			else if(binding.equals("merge")) client.openReviews();

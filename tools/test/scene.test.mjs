@@ -93,44 +93,33 @@ test('resolveTemplates keeps types, interpolates, and skips on missing values', 
   assert.throws(() => resolveTemplates('{{merge.id}}', templateContext(null)), /no Foreman is connected/);
 });
 
-test('qa.json on a Phase-1 mod (no anchors, no screens): fallbacks shot, the rest skipped with reasons', async () => {
+test('current campus scene skips unknown cameras without inventing fallback views', async () => {
   const dev = new FakeDev();
   const fm = fakeForeman();
   const scene = loadScene(path.join(TOOLS, 'scenes', 'qa.json'));
   const sum = await runScene({ scene, dev, foreman: fm, prefix: 'qa/t/', log: quiet });
   const st = Object.fromEntries(sum.shots.map((r) => [r.name, r.status]));
   assert.equal(sum.shots.length, 10);
-  assert.equal(st.qa01_exterior_hero, 'ok');
-  assert.equal(st.qa10_night, 'ok');
-  for (const n of ['qa02_entrance_atrium', 'qa03_task_wall', 'qa04_agent_desk', 'qa05_wide_interior', 'qa06_decision_podium']) assert.equal(st[n], 'skipped', n);
-  for (const n of ['qa07_console', 'qa08_diff_review', 'qa09_library']) assert.match(sum.shots.find((r) => r.name === n).reason, /not registered/);
+  for (const shot of scene.shots) { assert.equal(st[shot.name], 'skipped'); assert.match(sum.shots.find(r => r.name === shot.name).reason, /no camera/); }
   assert.equal(sum.ok, true);
   assert.equal(sum.counts.failed, 0);
-  // the diff precondition still ran for qa08 (real multi-file diff recorded in the manifest)
-  assert.equal(sum.shots.find((r) => r.name === 'qa08_diff_review').foreman[0].stats.files, 2);
-  // night shot ran at night
-  const timeCalls = dev.calls.filter((c) => c.type === 'dev.time').map((c) => c.ticks);
-  assert.deepEqual(timeCalls, [12400, 12000, 18000]); // golden-hour hero, back to day, night
-  assert.ok(dev.calls.some((c) => c.type === 'dev.screenshot' && c.name === 'qa/t/qa01_exterior_hero'));
+  assert.ok(!dev.calls.some(c => c.type === 'dev.screenshot'));
+  assert.deepEqual(fm.sent, []);
 });
 
 test('qa.json on a full mod: every shot uses its anchor, screens get resolved args and are closed', async () => {
-  const names = ['cam_exterior_hero', 'cam_entrance_atrium', 'cam_task_wall', 'cam_agent_desk', 'cam_wide_interior', 'cam_decision_podium', 'cam_console', 'cam_merge_station', 'cam_library', 'cam_night'];
+  const names = ['cam_exterior_hero', 'cam_entrance_atrium', 'cam_task_wall', 'cam_desk_kit', 'cam_wide_interior', 'cam_decision_podium', 'cam_console', 'cam_merge_station', 'cam_library', 'cam_night'];
   const anchors = Object.fromEntries(names.map((n, i) => [n, { x: i, y: 70, z: i, yaw: 10 * i, pitch: 5 }]));
-  const dev = new FakeDev({ anchors, screens: ['chat', 'console', 'diff', 'library'], foremanState: { connected: true } });
+  const dev = new FakeDev({ anchors, screens: ['t3', 't3-library'], foremanState: { connected: true } });
   const fm = fakeForeman();
   const sum = await runScene({ scene: loadScene(path.join(TOOLS, 'scenes', 'qa.json')), dev, foreman: fm, log: quiet });
   assert.equal(sum.counts.ok, 10, JSON.stringify(sum.shots.filter((r) => r.status !== 'ok')));
   for (const r of sum.shots) assert.equal(r.camera.source, 'mod', r.name);
-  assert.equal(sum.shots.find((r) => r.name === 'qa04_agent_desk').camera.anchor, 'cam_agent_desk');
-  const diffOpen = dev.calls.find((c) => c.type === 'dev.screen' && c.open === 'diff');
-  assert.deepEqual(diffOpen, { type: 'dev.screen', open: 'diff', decisionId: 'd3', repoId: 'sim-demo-showcase', worktree: 'wren-t4' });
-  const typed = dev.calls.find((c) => c.type === 'dev.type');
-  assert.equal(typed.text, '@ju');
-  // order for the console shot: camera -> screen -> type -> wait -> screenshot -> close
-  const i = dev.calls.findIndex((c) => c.type === 'dev.screen' && c.open === 'console');
-  const seq = dev.calls.slice(i - 1, i + 6).map((c) => c.type + (c.type === 'dev.screen' ? `:${c.open}` : ''));
-  assert.deepEqual(seq, ['dev.camera', 'dev.screen:console', 'dev.wait', 'dev.type', 'dev.wait', 'dev.screenshot', 'dev.screen:null']);
+  assert.equal(sum.shots.find(r => r.name === 'qa04_agent_desk').camera.anchor, 'cam_desk_kit');
+  assert.ok(dev.calls.some(c => c.type === 'dev.t3.review' && c.selectFile === 'src/greeting.ts'));
+  assert.deepEqual(dev.calls.filter(c => c.type === 'dev.t3.menu').map(c => c.click), ['Workspace', 'Review changes']);
+  assert.ok(!dev.calls.some(c => c.type === 'dev.type'));
+  assert.deepEqual(fm.sent, []);
 });
 
 test('a dev.state path the mod never reports does not stall the scene', async () => {

@@ -40,6 +40,10 @@ public final class ConnectionChecks {
 		get(a + "/_qa/reset");
 		var pairing = T3Api.pair(a + "/pair#token=fixture-pairing", "Minecraft");
 		check(pairing.baseUrl().equals(a) && pairing.accessToken().equals("fixture-only"), "real form token exchange against fixture");
+		var scopes = com.google.gson.JsonParser.parseString(HttpClient.newHttpClient().send(HttpRequest.newBuilder(URI.create(a + "/_qa/pairing-scopes")).GET().build(), HttpResponse.BodyHandlers.ofString()).body()).getAsJsonArray();
+		var descriptor = com.google.gson.JsonParser.parseString(HttpClient.newHttpClient().send(HttpRequest.newBuilder(URI.create(a + "/.well-known/t3/environment")).GET().build(), HttpResponse.BodyHandlers.ofString()).body()).getAsJsonObject();
+		boolean advanced = descriptor.get("orchestrationProtocolVersion").getAsInt() == 2;
+		check(scopes.contains(new com.google.gson.JsonPrimitive("terminal:operate")) == advanced && scopes.contains(new com.google.gson.JsonPrimitive("review:write")) == advanced, "protocol-2 pairing requests terminal and review permissions; protocol 1 keeps its scopes");
 		T3Api apiA = new T3Api(a, "fixture-only"), apiB = new T3Api(b, "fixture-only");
 		T3State state = new T3State(event -> {}); state.setPanelOpen(true);
 		state.connect(List.of(new T3State.Connection(apiA, "Studio"), new T3State.Connection(apiB, "Studio")), "B-done-0");

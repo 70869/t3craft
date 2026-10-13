@@ -11,7 +11,7 @@ import net.minecraft.network.chat.Component;
 import java.util.List;
 
 /** The focused owner's recent backend activity, including cached activity when offline. */
-final class T3ActivityScreen extends Screen {
+final class T3ActivityScreen extends T3MenuScreen {
 	private final T3CraftClient mod;
 	private final String threadId;
 	private final String threadTitle;
@@ -32,7 +32,7 @@ final class T3ActivityScreen extends Screen {
 			.bounds(16, height - 32, 98, 20).build());
 	}
 	@Override public boolean isPauseScreen() { return false; }
-	@Override public boolean isInGameUi() { return true; }
+	@Override public boolean isInGameUi() { return false; }
 	@Override public void removed() { mod.state().setPanelOpen(false); }
 	@Override public boolean mouseScrolled(double x, double y, double h, double v) { scroll = Math.max(0, scroll - (int)(v * 3)); return true; }
 	@Override public boolean keyPressed(KeyEvent event) {
@@ -45,19 +45,19 @@ final class T3ActivityScreen extends Screen {
 	@Override public void extractRenderState(GuiGraphicsExtractor g, int mx, int my, float delta) {
 		var snapshot = mod.state().snapshot();
 		if (snapshot.focus() != null && threadId.equals(snapshot.focus().threadId())) cached = snapshot.focus();
-		g.fill(8, 8, width - 8, height - 8, 0xF0222529);
-		g.text(font, T3Hud.ellipsize(font, "Activity · " + threadTitle, width - 32), 16, 17, 0xFFE5E7EB, false);
+		paper(g, 8, 8, width - 8, height - 8);
+		g.text(font, T3Hud.ellipsize(font, "Activity · " + threadTitle, width - 32), 16, 17, INK, false);
 		String state = !mod.state().online(threadId) ? "OFFLINE · cached events" : "Connected · recent events";
-		g.text(font, state + " · newest first", 16, 34, 0xFF9CA3AF, false);
+		g.text(font, state + " · newest first", 16, 34, MUTED, false);
 		if (rendered != cached || wrappedWidth != width) {
 			List<Line> content = new java.util.ArrayList<>();
-			if (cached == null) append(content, "Loading activity…", 0xFF9CA3AF);
-			else if (cached.activity().isEmpty()) append(content, "No activity in this recent window. Older events may be outside it.", 0xFF9CA3AF);
+			if (cached == null) append(content, "Loading activity…", MUTED);
+			else if (cached.activity().isEmpty()) append(content, "No activity in this recent window. Older events may be outside it.", MUTED);
 			else for (var event : cached.activity().reversed()) {
-				append(content, event.summary() + (event.status() == null ? "" : " · " + event.status()), 0xFF91C9FF);
-				if (event.at() != null) append(content, event.at(), 0xFF9CA3AF);
-				if (event.detail() != null) append(content, event.detail(), 0xFFE5E7EB);
-				append(content, " ", 0xFFE5E7EB);
+				append(content, event.summary() + (event.status() == null ? "" : " · " + event.status()), ACCENT);
+				if (event.at() != null) append(content, event.at(), MUTED);
+				if (event.detail() != null) append(content, event.detail(), INK);
+				append(content, " ", INK);
 			}
 			lines = List.copyOf(content); rendered = cached; wrappedWidth = width;
 		}

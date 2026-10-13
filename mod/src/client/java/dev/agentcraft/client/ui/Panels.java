@@ -22,10 +22,12 @@ public final class Panels {
 	}
 
 	public static void sprite(GuiGraphicsExtractor g, Identifier sprite, int x, int y, int w, int h) {
+		if (T3ThemeWidgets.sprite(g, sprite, x, y, w, h)) return;
 		g.blitSprite(RenderPipelines.GUI_TEXTURED, sprite, x, y, w, h);
 	}
 
 	public static void sprite(GuiGraphicsExtractor g, Identifier sprite, int x, int y, int w, int h, int argb) {
+		if (T3ThemeWidgets.sprite(g, sprite, x, y, w, h)) return;
 		g.blitSprite(RenderPipelines.GUI_TEXTURED, sprite, x, y, w, h, argb);
 	}
 

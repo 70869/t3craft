@@ -502,6 +502,8 @@ final class DevCommands {
 				mc.setCameraEntity(player);
 			}
 			// Every camera call fully defines the view: the FOV is the request's, else the player's option.
+			net.minecraft.client.KeyMapping.releaseAll();
+			player.setDeltaMovement(Vec3.ZERO);
 			DevCamera.pinFov(r.fov() != null ? r.fov() : mc.options.fov().get().floatValue());
 			if (r.hideHud() != null && mc.gui.hud.isHidden() != r.hideHud()) {
 				mc.gui.hud.toggle();
@@ -529,6 +531,7 @@ final class DevCommands {
 					sp.getAbilities().flying = true;
 					sp.onUpdateAbilities();
 				}
+				sp.setDeltaMovement(Vec3.ZERO);
 				sp.teleportTo(sp.level(), r.x(), feetY, r.z(), Set.of(), r.yaw(), r.pitch(), true);
 				return feetY;
 			});
@@ -967,7 +970,9 @@ final class DevCommands {
 			}
 			Screen screen = mc.gui.screen();
 			if (screen != null) {
-				boolean handled = screen.keyPressed(new KeyEvent(key.getValue(), 0, mods));
+				KeyEvent event = new KeyEvent(key.getValue(), org.lwjgl.sdl.SDLKeyboard.SDL_GetKeyFromScancode(key.getValue(), (short) mods, false), mods);
+				boolean handled = screen.keyPressed(event);
+				screen.keyReleased(event);
 				o.addProperty("screenHandled", handled);
 			} else {
 				KeyMapping.click(key);

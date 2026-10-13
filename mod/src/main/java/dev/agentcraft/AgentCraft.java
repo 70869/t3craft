@@ -8,6 +8,7 @@ import dev.agentcraft.entity.ModEntities;
 import dev.agentcraft.hq.HqFeature;
 import dev.agentcraft.layout.Anchors;
 import dev.agentcraft.world.HqWorld;
+import dev.agentcraft.world.HqIsland;
 import net.fabricmc.api.ModInitializer;
 import net.minecraft.resources.Identifier;
 import org.slf4j.Logger;
@@ -32,6 +33,7 @@ public class AgentCraft implements ModInitializer {
 		Anchors.init();
 		AgentCraftCommands.init();
 		HqFeature.init();
+		HqIsland.init();
 		LOGGER.info("AgentCraft common init done ({} blocks, cast {})", ModBlocks.all().size(), Cast.ids());
 	}
 

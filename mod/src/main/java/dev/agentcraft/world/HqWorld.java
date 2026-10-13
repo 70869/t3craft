@@ -1,5 +1,6 @@
 package dev.agentcraft.world;
 
+import com.google.gson.JsonParser;
 import dev.agentcraft.AgentCraft;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -22,7 +23,7 @@ import net.minecraft.world.level.storage.LevelResource;
 public final class HqWorld {
 	/** Folder name and level name of the HQ world. */
 	public static final String LEVEL_NAME = "AgentCraft HQ";
-	/** Surface Y of the superflat meadow: grass top is at y=64, so you stand at y=65. */
+	/** Campus lawn surface at y=64; the surrounding ocean is one block lower. */
 	public static final int SURFACE_Y = 64;
 	/** Golden-hour-ish day time set once when the world is created. */
 	public static final long INITIAL_TIME = 12000L;
@@ -46,7 +47,23 @@ public final class HqWorld {
 	}
 
 	public static boolean isHq(MinecraftServer server) {
-		return LEVEL_NAME.equals(server.getWorldData().getLevelName());
+		return isHq(server.getWorldData().getLevelName(), server.getWorldPath(LevelResource.ROOT));
+	}
+
+	static boolean isHq(String levelName, Path worldRoot) {
+		if (LEVEL_NAME.equals(levelName)) {
+			return true;
+		}
+		Path marker = worldRoot.resolve(MARKER_FILE);
+		if (!Files.isRegularFile(marker)) {
+			return false;
+		}
+		try {
+			return JsonParser.parseString(Files.readString(marker, StandardCharsets.UTF_8)).getAsJsonObject()
+				.get("createdBy").getAsString().equals("agentcraft");
+		} catch (RuntimeException | IOException e) {
+			return false;
+		}
 	}
 
 	private static void onServerStarted(MinecraftServer server) {

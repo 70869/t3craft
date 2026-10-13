@@ -15,7 +15,7 @@ import org.jspecify.annotations.Nullable;
  * Right-click on a station block, handled on the client (e.g. open the console screen on a terminal,
  * the library on an archive, the decision GUI on the podium). One handler per block; the click is
  * consumed client-side and not sent to the server. Sneak-right-click with an item still places
- * blocks normally.
+ * blocks normally, except on monitors and the atrium projector, where it opens display controls.
  *
  * <pre>
  * StationInteractions.onUse(ModBlocks.CONSOLE_TERMINAL, (player, pos, state, be) -> Minecraft.getInstance().gui.setScreen(new ConsoleScreen()));
@@ -38,11 +38,21 @@ public final class StationInteractions {
 		if (!registered) {
 			registered = true;
 			UseBlockCallback.EVENT.register((player, level, hand, hit) -> {
-				if (!level.isClientSide() || player.isSecondaryUseActive()) {
+				if (!level.isClientSide()) {
 					return InteractionResult.PASS;
 				}
 				BlockPos pos = hit.getBlockPos();
 				BlockState state = level.getBlockState(pos);
+				boolean monitor = state.getBlock() instanceof dev.agentcraft.block.MonitorBlock;
+				boolean statusLamp = state.getBlock() instanceof dev.agentcraft.block.StatusLampBlock;
+				boolean displayWithItem = monitor || statusLamp
+					&& level.getBlockEntity(pos) instanceof dev.agentcraft.block.entity.StatusLampBlockEntity lamp
+					&& "goal:atrium".equals(lamp.binding());
+				boolean holdingItem = !player.getMainHandItem().isEmpty() || !player.getOffhandItem().isEmpty();
+				// Shift-use opens display controls on monitors even while holding a block. The atrium
+				// projector has the same control; other stations retain normal item placement behavior.
+				if (player.isSecondaryUseActive()
+					&& ((!monitor && !statusLamp) || (holdingItem && !displayWithItem))) return InteractionResult.PASS;
 				Handler h = HANDLERS.get(state.getBlock());
 				if (h == null) {
 					return InteractionResult.PASS;

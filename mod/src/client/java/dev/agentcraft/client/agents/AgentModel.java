@@ -36,6 +36,7 @@ public final class AgentModel extends PlayerModel {
 			// keep vanilla's gentle breathing sway on top of the posture
 			AnimationUtils.bobModelPart(rightArm, state.ageInTicks, 1.0F);
 			AnimationUtils.bobModelPart(leftArm, state.ageInTicks, -1.0F);
+			rightArm.y += p[AgentLife.P_RHAND]; leftArm.y += p[AgentLife.P_LHAND];
 		}
 		float lw = Mth.clamp(p[AgentLife.P_LEGW], 0f, 1f);
 		if (lw > 0.001f) {
@@ -50,6 +51,11 @@ public final class AgentModel extends PlayerModel {
 		if (Math.abs(lean) > 0.001f) {
 			lean(lean);
 		}
+		head.zRot += p[AgentLife.P_HEADROLL];
+		body.zRot += p[AgentLife.P_BODYROLL];
+		head.zRot += p[AgentLife.P_BODYROLL];
+		rightArm.zRot += p[AgentLife.P_BODYROLL];
+		leftArm.zRot += p[AgentLife.P_BODYROLL];
 	}
 
 	/**

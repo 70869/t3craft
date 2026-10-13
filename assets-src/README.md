@@ -81,7 +81,7 @@ or CRLF line endings never count as stale.
 | `gen/extract_ref.py` | vanilla reference textures/models/font for the review sheets, from Loom's cached client jar |
 | `gen/common.py, gen/tex.py` | palette loading, grid painting, deterministic hashing, PNG writing |
 | `gen/skinlib.py` | 64x64 skin layout (classic + slim), face orientation rules, validation (opaque base layer, binary overlay alpha) |
-| `gen/skins.py + gen/chars/<id>.py` | one module per agent; every face is a literal pixel grid |
+| `gen/skins.py + gen/chars/<id>.py` | six hand-authored core skins and eighteen CC0 pack skins converted from legacy 64x32 UVs |
 | `gen/cast_check.py` | CIEDE2000 distances (identity vs status >= 25, agent vs agent >= 18, accent vs status >= 20) + WCAG name tints checked against every surface they are drawn on, written back into cast.json |
 | `gen/portraits.py` | 8x8 and 20x20 framed GUI portraits cut from the skins |
 | `gen/blocks.py` | 16x16 block textures (hand grids + structured procedural for tileable materials); asserts opacity |
@@ -246,7 +246,7 @@ fixed-size and drawn at their own size. 1 texel = 1 GUI px. Full manifest with c
 
 ## Asset manifest (every shipped file)
 
-282 files under `out/assets/agentcraft/`.
+337 files under `out/assets/agentcraft/`.
 
 ### blockstates/console_terminal.json
 
@@ -535,6 +535,12 @@ fixed-size and drawn at their own size. 1 texel = 1 GUI px. Full manifest with c
 |---|---|
 | `palette.json` | runtime copy of the Warm Studio palette |
 
+### t3-themes.json
+
+| file | use |
+|---|---|
+| `t3-themes.json` | pinned T3 Code built-in light/dark color roles; MIT source and conversion recorded in snapshot |
+
 ### textures/block
 
 | file | use |
@@ -597,29 +603,83 @@ fixed-size and drawn at their own size. 1 texel = 1 GUI px. Full manifest with c
 
 | file | use |
 |---|---|
+| `textures/entity/agent/crash.png` | 64x64 player-format agent skin (base + overlay layers; see cast.json for model) |
+| `textures/entity/agent/donkeykong.png` | 64x64 player-format agent skin (base + overlay layers; see cast.json for model) |
 | `textures/entity/agent/juniper.png` | 64x64 player-format agent skin (base + overlay layers; see cast.json for model) |
+| `textures/entity/agent/kirby.png` | 64x64 player-format agent skin (base + overlay layers; see cast.json for model) |
 | `textures/entity/agent/kit.png` | 64x64 player-format agent skin (base + overlay layers; see cast.json for model) |
+| `textures/entity/agent/lara.png` | 64x64 player-format agent skin (base + overlay layers; see cast.json for model) |
+| `textures/entity/agent/link.png` | 64x64 player-format agent skin (base + overlay layers; see cast.json for model) |
+| `textures/entity/agent/luigi.png` | 64x64 player-format agent skin (base + overlay layers; see cast.json for model) |
+| `textures/entity/agent/mario.png` | 64x64 player-format agent skin (base + overlay layers; see cast.json for model) |
 | `textures/entity/agent/marlow.png` | 64x64 player-format agent skin (base + overlay layers; see cast.json for model) |
+| `textures/entity/agent/megaman.png` | 64x64 player-format agent skin (base + overlay layers; see cast.json for model) |
+| `textures/entity/agent/naruto.png` | 64x64 player-format agent skin (base + overlay layers; see cast.json for model) |
+| `textures/entity/agent/pacman.png` | 64x64 player-format agent skin (base + overlay layers; see cast.json for model) |
+| `textures/entity/agent/peach.png` | 64x64 player-format agent skin (base + overlay layers; see cast.json for model) |
+| `textures/entity/agent/pikachu.png` | 64x64 player-format agent skin (base + overlay layers; see cast.json for model) |
 | `textures/entity/agent/rowan.png` | 64x64 player-format agent skin (base + overlay layers; see cast.json for model) |
+| `textures/entity/agent/samus.png` | 64x64 player-format agent skin (base + overlay layers; see cast.json for model) |
+| `textures/entity/agent/snake.png` | 64x64 player-format agent skin (base + overlay layers; see cast.json for model) |
+| `textures/entity/agent/sonic.png` | 64x64 player-format agent skin (base + overlay layers; see cast.json for model) |
+| `textures/entity/agent/spartan.png` | 64x64 player-format agent skin (base + overlay layers; see cast.json for model) |
 | `textures/entity/agent/tove.png` | 64x64 player-format agent skin (base + overlay layers; see cast.json for model) |
 | `textures/entity/agent/wren.png` | 64x64 player-format agent skin (base + overlay layers; see cast.json for model) |
+| `textures/entity/agent/yoshi.png` | 64x64 player-format agent skin (base + overlay layers; see cast.json for model) |
+| `textures/entity/agent/zelda.png` | 64x64 player-format agent skin (base + overlay layers; see cast.json for model) |
 
 ### textures/gui
 
 | file | use |
 |---|---|
+| `textures/gui/portrait/crash.png` | 8x8 agent face (base + hat layer) for inline GUI use |
+| `textures/gui/portrait/crash_framed.png` | 20x20 framed portrait (brass rim + identity ring + 2x face) for GUI lists |
+| `textures/gui/portrait/donkeykong.png` | 8x8 agent face (base + hat layer) for inline GUI use |
+| `textures/gui/portrait/donkeykong_framed.png` | 20x20 framed portrait (brass rim + identity ring + 2x face) for GUI lists |
 | `textures/gui/portrait/juniper.png` | 8x8 agent face (base + hat layer) for inline GUI use |
 | `textures/gui/portrait/juniper_framed.png` | 20x20 framed portrait (brass rim + identity ring + 2x face) for GUI lists |
+| `textures/gui/portrait/kirby.png` | 8x8 agent face (base + hat layer) for inline GUI use |
+| `textures/gui/portrait/kirby_framed.png` | 20x20 framed portrait (brass rim + identity ring + 2x face) for GUI lists |
 | `textures/gui/portrait/kit.png` | 8x8 agent face (base + hat layer) for inline GUI use |
 | `textures/gui/portrait/kit_framed.png` | 20x20 framed portrait (brass rim + identity ring + 2x face) for GUI lists |
+| `textures/gui/portrait/lara.png` | 8x8 agent face (base + hat layer) for inline GUI use |
+| `textures/gui/portrait/lara_framed.png` | 20x20 framed portrait (brass rim + identity ring + 2x face) for GUI lists |
+| `textures/gui/portrait/link.png` | 8x8 agent face (base + hat layer) for inline GUI use |
+| `textures/gui/portrait/link_framed.png` | 20x20 framed portrait (brass rim + identity ring + 2x face) for GUI lists |
+| `textures/gui/portrait/luigi.png` | 8x8 agent face (base + hat layer) for inline GUI use |
+| `textures/gui/portrait/luigi_framed.png` | 20x20 framed portrait (brass rim + identity ring + 2x face) for GUI lists |
+| `textures/gui/portrait/mario.png` | 8x8 agent face (base + hat layer) for inline GUI use |
+| `textures/gui/portrait/mario_framed.png` | 20x20 framed portrait (brass rim + identity ring + 2x face) for GUI lists |
 | `textures/gui/portrait/marlow.png` | 8x8 agent face (base + hat layer) for inline GUI use |
 | `textures/gui/portrait/marlow_framed.png` | 20x20 framed portrait (brass rim + identity ring + 2x face) for GUI lists |
+| `textures/gui/portrait/megaman.png` | 8x8 agent face (base + hat layer) for inline GUI use |
+| `textures/gui/portrait/megaman_framed.png` | 20x20 framed portrait (brass rim + identity ring + 2x face) for GUI lists |
+| `textures/gui/portrait/naruto.png` | 8x8 agent face (base + hat layer) for inline GUI use |
+| `textures/gui/portrait/naruto_framed.png` | 20x20 framed portrait (brass rim + identity ring + 2x face) for GUI lists |
+| `textures/gui/portrait/pacman.png` | 8x8 agent face (base + hat layer) for inline GUI use |
+| `textures/gui/portrait/pacman_framed.png` | 20x20 framed portrait (brass rim + identity ring + 2x face) for GUI lists |
+| `textures/gui/portrait/peach.png` | 8x8 agent face (base + hat layer) for inline GUI use |
+| `textures/gui/portrait/peach_framed.png` | 20x20 framed portrait (brass rim + identity ring + 2x face) for GUI lists |
+| `textures/gui/portrait/pikachu.png` | 8x8 agent face (base + hat layer) for inline GUI use |
+| `textures/gui/portrait/pikachu_framed.png` | 20x20 framed portrait (brass rim + identity ring + 2x face) for GUI lists |
 | `textures/gui/portrait/rowan.png` | 8x8 agent face (base + hat layer) for inline GUI use |
 | `textures/gui/portrait/rowan_framed.png` | 20x20 framed portrait (brass rim + identity ring + 2x face) for GUI lists |
+| `textures/gui/portrait/samus.png` | 8x8 agent face (base + hat layer) for inline GUI use |
+| `textures/gui/portrait/samus_framed.png` | 20x20 framed portrait (brass rim + identity ring + 2x face) for GUI lists |
+| `textures/gui/portrait/snake.png` | 8x8 agent face (base + hat layer) for inline GUI use |
+| `textures/gui/portrait/snake_framed.png` | 20x20 framed portrait (brass rim + identity ring + 2x face) for GUI lists |
+| `textures/gui/portrait/sonic.png` | 8x8 agent face (base + hat layer) for inline GUI use |
+| `textures/gui/portrait/sonic_framed.png` | 20x20 framed portrait (brass rim + identity ring + 2x face) for GUI lists |
+| `textures/gui/portrait/spartan.png` | 8x8 agent face (base + hat layer) for inline GUI use |
+| `textures/gui/portrait/spartan_framed.png` | 20x20 framed portrait (brass rim + identity ring + 2x face) for GUI lists |
 | `textures/gui/portrait/tove.png` | 8x8 agent face (base + hat layer) for inline GUI use |
 | `textures/gui/portrait/tove_framed.png` | 20x20 framed portrait (brass rim + identity ring + 2x face) for GUI lists |
 | `textures/gui/portrait/wren.png` | 8x8 agent face (base + hat layer) for inline GUI use |
 | `textures/gui/portrait/wren_framed.png` | 20x20 framed portrait (brass rim + identity ring + 2x face) for GUI lists |
+| `textures/gui/portrait/yoshi.png` | 8x8 agent face (base + hat layer) for inline GUI use |
+| `textures/gui/portrait/yoshi_framed.png` | 20x20 framed portrait (brass rim + identity ring + 2x face) for GUI lists |
+| `textures/gui/portrait/zelda.png` | 8x8 agent face (base + hat layer) for inline GUI use |
+| `textures/gui/portrait/zelda_framed.png` | 20x20 framed portrait (brass rim + identity ring + 2x face) for GUI lists |
 
 ### textures/gui/sprites/kit
 

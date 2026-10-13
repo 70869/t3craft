@@ -49,6 +49,7 @@ def build_assets():
     import json
     write_json(OUT / "palette.json", json.load(open(ROOT / "palette.json", encoding="utf-8")))
     write_json(OUT / "cast.json", json.load(open(ROOT / "cast.json", encoding="utf-8")))
+    write_json(OUT / "t3-themes.json", json.load(open(ROOT / "t3-themes.json", encoding="utf-8")))
     n = sum(1 for p in OUT.rglob("*") if p.is_file())
     import validate
     if not validate.main():

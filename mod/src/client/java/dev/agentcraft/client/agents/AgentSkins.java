@@ -5,7 +5,6 @@ import dev.agentcraft.Cast;
 import java.util.HashMap;
 import java.util.Map;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.resources.DefaultPlayerSkin;
 import net.minecraft.core.ClientAsset;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.PlayerModelType;
@@ -13,8 +12,7 @@ import net.minecraft.world.entity.player.PlayerSkin;
 
 /**
  * Agent skins: {@code assets/agentcraft/textures/entity/agent/<skin>.png} (64x64, both layers) with
- * the arm model from cast.json ({@code slim} = 3 px arms). Unknown skins fall back to a vanilla
- * default skin so a new Foreman agent still renders.
+ * the arm model from cast.json ({@code slim} = 3 px arms). Unknown skins use the Shadow Scout look.
  */
 public final class AgentSkins {
 	private static final Map<String, PlayerSkin> CACHE = new HashMap<>();
@@ -35,10 +33,11 @@ public final class AgentSkins {
 		}
 		boolean exists = Minecraft.getInstance().getResourceManager().getResource(tex.texturePath()).isPresent();
 		if (!exists) {
-			AgentCraft.LOGGER.warn("No skin texture {} for agent {}; using a default skin", tex.texturePath(), agentId);
-			return DefaultPlayerSkin.get(java.util.UUID.nameUUIDFromBytes(agentId.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+			AgentCraft.LOGGER.warn("No skin texture {} for agent {}; using Shadow Scout", tex.texturePath(), agentId);
+			tex = new ClientAsset.ResourceTexture(AgentCraft.id("entity/agent/spartan"));
+			skinId = "spartan";
 		}
-		return PlayerSkin.insecure(tex, null, null, m != null && m.slim() ? PlayerModelType.SLIM : PlayerModelType.WIDE);
+		return PlayerSkin.insecure(tex, null, null, dev.agentcraft.NpcLooks.slim(m == null ? agentId : m.id(), skinId) ? PlayerModelType.SLIM : PlayerModelType.WIDE);
 	}
 
 	public static void clear() {

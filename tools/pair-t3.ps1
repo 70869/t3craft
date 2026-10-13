@@ -42,7 +42,7 @@ $tokenField = $fragment.Split('&') | Where-Object { $_.StartsWith('token=') } | 
 if (-not $tokenField -or $link.Scheme -notin @('http', 'https') -or $link.UserInfo) { throw 'Use the complete T3 pairing URL, including #token=.' }
 $origin = $link.GetLeftPart([UriPartial]::Authority)
 if ($link.Scheme -eq 'http' -and $link.Host -notin @('127.0.0.1', 'localhost', '::1')) { throw 'Remote pairing requires HTTPS.' }
-$scope = 'orchestration:read orchestration:operate'
+$scope = 'orchestration:read orchestration:operate terminal:operate review:write'
 $form = @{
     grant_type = 'urn:ietf:params:oauth:grant-type:token-exchange'
     subject_token = [Uri]::UnescapeDataString($tokenField.Substring(6))

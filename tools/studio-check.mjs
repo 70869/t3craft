@@ -9,6 +9,15 @@ const port=Number(process.argv[2] || 27879);
 const dev=await DevClient.connect({port,timeoutMs:10000});
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const evidence=[];
+const camera=async args=>{
+  for(let attempt=0;attempt<3;attempt++) {
+    try { return await dev.call('dev.camera',args); }
+    catch(error) {
+      if(!error.message.includes('camera did not reach') || attempt===2) throw error;
+      await sleep(250);
+    }
+  }
+};
 const qa=async(path,machine='A')=>{
   const response=await fetch(`http://127.0.0.1:${machine==='A'?25680:25681}/_qa/${path}`);
   assert.equal(response.ok,true,`fixture ${path}`); return response.json();
@@ -27,7 +36,7 @@ try {
   const initial=await dev.call('dev.state');
   assert.equal(initial.foreman.counts.tasks,26,'game must be connected to the isolated fixture history');
   assert.match(initial.foreman.oldestOpenDecision,/^[AB]-/,'fixture decisions required');
-  assert.equal(initial.agents.count,6); assert.equal(initial.foreman.counts.memory,26);
+  assert.equal(initial.agents.count,18); assert.equal(initial.foreman.counts.memory,26);
   const fresh=await inspect(); assert.equal(fresh.life.particles,0,'loading a completed chat must not replay completion');
   await qa('reset');
   await waitFor(s=>!s.agent.stale&&!s.agent.walking&&s.agent.state==='done'&&s.life.particles===0,'clean fixture baseline');
@@ -36,13 +45,13 @@ try {
   const working=await waitFor(s=>s.agent.state==='running'&&!s.agent.walking&&s.life.posture==='SIT_TYPE','working NPC reaches and types at its own desk');
   assert.equal(working.agent.anchor,'desk_marlow');
   evidence.push({state:'working',anchor:working.agent.anchor,posture:working.life.posture});
-  await dev.call('dev.camera',{anchor:'cam_desk_marlow',hideHud:false,mode:'creative'});
+  await camera({anchor:'cam_desk_marlow',hideHud:false,mode:'creative'});
   await dev.call('dev.screenshot',{name:'t3-npc-working',hideHud:false});
   await qa('studio?state=waiting');
   const waiting=await waitFor(s=>s.agent.state==='waiting_user'&&!s.agent.walking&&s.life.needsYou&&s.life.awaitingDecision==='A-done-0:shared-request','waiting NPC approaches player with exact request');
   assert.equal(waiting.agent.station,'user'); assert.equal(waiting.life.awaitingDecision,'A-done-0:shared-request');
   evidence.push({state:'waiting',anchor:waiting.agent.anchor,posture:waiting.life.posture,exactRequest:waiting.life.awaitingDecision});
-  await dev.call('dev.camera',{x:waiting.agent.x+3,y:67.62,z:waiting.agent.z+3,lookAt:{x:waiting.agent.x,y:67.5,z:waiting.agent.z},mode:'creative',hideHud:false});
+  await camera({x:waiting.agent.x+3,y:67.62,z:waiting.agent.z+3,lookAt:{x:waiting.agent.x,y:67.5,z:waiting.agent.z},mode:'creative',hideHud:false});
   await dev.call('dev.screenshot',{name:'t3-npc-waiting',hideHud:false});
   await qa('studio?state=completed');
   const done=await waitFor(s=>s.agent.state==='done'&&s.life.particles>0,'actual completion produces particles',10000);
@@ -77,12 +86,12 @@ try {
   await dev.call('dev.screenshot',{name:'t3-studio-board-small',hideHud:false});
   await dev.call('dev.hud.guiScale',{scale:3});
   await dev.call('dev.screen',{open:null});
-  await dev.call('dev.camera',{anchor:'cam_merge_station',hideHud:false,mode:'creative'});
+  await camera({anchor:'cam_merge_station',hideHud:false,mode:'creative'});
   await dev.call('dev.screenshot',{name:'t3-studio-checkpoint-station',hideHud:false});
   const final=await dev.call('dev.state');
   assert.equal(final.agents.pathFailures,0,'NPC navigation has no failed paths');
   evidence.push({pathFailures:final.agents.pathFailures,residents:final.agents.count,tasks:final.foreman.counts.tasks});
   await mkdir('artifacts/qa',{recursive:true});
   await writeFile('artifacts/qa/t3-studio.json',JSON.stringify(evidence,null,2));
-  console.log('PASS six residents; own desk typing; exact waiting request and approach; real completion particles; error; per-machine offline lamps; recovery; T3 station screens; navigation.');
+  console.log('PASS 18 residents; own desk typing; exact waiting request and approach; real completion particles; error; per-machine offline lamps; recovery; T3 station screens; navigation.');
 } finally { dev.close(); }

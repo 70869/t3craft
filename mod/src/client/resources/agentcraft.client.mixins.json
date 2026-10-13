@@ -8,8 +8,11 @@
 		"CameraMixin",
 		"ClientLevelAccessor",
 		"EntityRenderDispatcherMixin",
+		"GuiScaleMixin",
 		"MinecraftMixin",
-		"RenderSystemMixin"
+		"RenderSystemMixin",
+		"ScreenAccessor",
+		"TitleScreenMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

@@ -121,6 +121,8 @@ public class AgentRenderer extends AvatarRenderer<ClientAgentEntity> {
 	@Override
 	public void submit(AvatarRenderState state, PoseStack poseStack, SubmitNodeCollector collector, CameraRenderState camera) {
 		super.submit(state, poseStack, collector, camera);
+		if (state instanceof AgentRenderState s) DeskKeyboard.submit(s, poseStack, collector);
+		if (state instanceof AgentRenderState s) ResidentProps.submit(s, poseStack, collector);
 		if (state instanceof AgentRenderState s && s.book > 0.02f && !s.isInvisible) {
 			submitBook(s, poseStack, collector);
 		}

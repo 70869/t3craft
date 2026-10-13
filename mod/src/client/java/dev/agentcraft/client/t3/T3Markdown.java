@@ -25,11 +25,11 @@ final class T3Markdown {
 
 	enum Kind { TEXT, GAP, CODE, QUOTE, RULE, LABEL }
 
-	static final int TEXT = 0xFFE5E7EB;
-	static final int MUTED = 0xFF9CA3AF;
-	static final int HEADING = 0xFFFFFFFF;
-	static final int CODE = 0xFFF0C674;
-	static final int LINK = 0xFF7DD3FC;
+	static int TEXT = T3MenuScreen.INK;
+	static int MUTED = T3MenuScreen.MUTED;
+	static int HEADING = T3MenuScreen.INK;
+	static int CODE = T3MenuScreen.ACCENT;
+	static int LINK = 0xFF365B65;
 
 	private static final Pattern LIST = Pattern.compile("^(\\s*)([-*+]|\\d+[.)])\\s+(.*)$");
 	private static final Pattern HEADING_LINE = Pattern.compile("^(#{1,6})\\s+(.*)$");

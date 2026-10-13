@@ -136,11 +136,13 @@ public final class UiBits {
 	// ------------------------------------------------------------------ portraits
 
 	private static Identifier portraitTexture(String agentId, boolean framed) {
+		var client = dev.agentcraft.client.t3.T3CraftClient.get();
+		if (client != null && Cast.get(agentId) != null) agentId = client.npcSkinResource(agentId);
 		return AgentCraft.id("textures/gui/portrait/" + agentId + (framed ? "_framed" : "") + ".png");
 	}
 
 	public static boolean hasPortrait(@Nullable String agentId) {
-		return agentId != null && Cast.get(agentId) != null;
+		return agentId != null && (Cast.get(agentId) != null || dev.agentcraft.NpcLooks.valid(agentId) && !agentId.equals("default"));
 	}
 
 	/**
@@ -252,11 +254,11 @@ public final class UiBits {
 		int labelColor;
 		int numColor;
 		if (st == ButtonState.DISABLED) {
-			labelColor = primary ? cream() : UiStyle.color("paper.disabled", 0xFFA39B8E);
+			labelColor = UiStyle.color("paper.disabled", 0xFFA39B8E);
 			numColor = labelColor;
 		} else if (primary) {
-			labelColor = panelHi();
-			numColor = UiStyle.withAlpha(panelHi(), 200);
+			labelColor = dev.agentcraft.client.ui.T3Theme.color("accentForeground");
+			numColor = labelColor;
 		} else {
 			labelColor = danger ? errorText() : ink();
 			numColor = muted();

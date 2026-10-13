@@ -30,8 +30,7 @@ import org.jspecify.annotations.Nullable;
  * <ol>
  *   <li>Project every visible plate (in front of the camera, line of sight to the plate or head) to
  *       a screen rectangle. Plates scale exactly with 1/depth because they are camera-facing.</li>
- *   <li>Low-value plates (idle, done, off shift, Foreman offline: {@link AgentView#plateWeight()}
- *       &le; 2) collapse to the name-only pill when their full plate would overlap another plate.
+ *   <li>Unfocused plates collapse to the name-and-status pill when crowded or farther than eight blocks.
  *       They expand again only after the full plate has had room (plus a margin) for a moment, so
  *       they don't flicker. The plate under the crosshair (or whose agent is targeted) always shows
  *       in full.</li>
@@ -67,19 +66,19 @@ public final class PlateLayout {
 	/** Lifts are capped at this many full plate heights; a low-value plate that would need more is hidden. */
 	private static final float MAX_LIFT_PLATES = 8f;
 	/** Plates nearer to the camera than this (blocks) are hidden: the agent is in your face and the plate would fill the screen. */
-	public static final float HIDE_NEARER = 1.3f;
-	/** Seated agents nearer than this (blocks) show no plate: their own monitor names them. */
-	public static final float NEAR_DESK = 6.5f;
+	public static final float HIDE_NEARER = 0.15f;
 	/** A camera jump (blocks / degrees in one frame) counts as a cut: plates snap instead of animating. */
 	private static final double CUT_DISTANCE = 1.5;
 	private static final float CUT_DEGREES = 25f;
 	/**
 	 * Near plates stop growing on screen at this size (screen px per plate px, as a multiple of the
-	 * GUI scale): a plate is never drawn bigger than ~1.1x the GUI's own text, however close its
+	 * GUI scale): a plate is never drawn bigger than ~0.75x the GUI's own text, however close its
 	 * agent stands (at 2 blocks a full-size plate plus its "!" used to fill the upper middle of the
-	 * view and push other plates off screen). Kicks in below ~6 blocks at 1080p / FOV 70.
+	 * view and push other plates off screen).
 	 */
-	private static final float NEAR_MAX_GUI = 1.1f;
+	private static final float NEAR_MAX_GUI = 0.75f;
+	/** Detailed project/activity boxes belong to nearby or targeted residents. */
+	private static final double DETAIL_DISTANCE = 8;
 	/** Plates (with their stack) stay this far below the top edge of the screen (fraction of its height). */
 	private static final float TOP_MARGIN = 0.012f;
 	/**
@@ -129,7 +128,7 @@ public final class PlateLayout {
 		Track t;
 		float sx, sy, k, f, depth, sortKey;
 		int weight;
-		boolean focused, compactable, compact, fresh, hidden;
+		boolean focused, compactable, distanceCompact, compact, fresh, hidden;
 		float x0, y0, x1, y1;
 
 		/** Width of the full plate or of what stacks on it (speech bubble), whichever is wider (px). */
@@ -347,13 +346,6 @@ public final class PlateLayout {
 				t.clear();
 				continue;
 			}
-			if (s.atMonitor && depth < NEAR_DESK) {
-				// seated at its desk, seen up close: its monitor already says who and what (header), and
-				// the plate would sit right on top of the monitor's text
-				s.plate = null;
-				t.clear();
-				continue;
-			}
 			cam.projectionMatrix.transform(V);
 			if (V.w <= 1e-6f) {
 				continue;
@@ -379,7 +371,8 @@ public final class PlateLayout {
 			it.focused = s.plateCrosshair || underCrosshair;
 			// low-value plates (idle, done, off shift, offline) form one tier: among them the nearest wins
 			it.weight = it.focused ? 100 : s.plateWeight <= 2 ? 0 : s.plateWeight;
-			it.compactable = !it.focused && s.plateWeight <= 2 && s.plateCompact != s.plateFull;
+			it.compactable = !it.focused && s.plateCompact != s.plateFull;
+			it.distanceCompact = it.compactable && s.distanceToCameraSq > DETAIL_DISTANCE * DETAIL_DISTANCE;
 			ITEMS.add(it);
 		}
 		int n = ITEMS.size();
@@ -388,10 +381,13 @@ public final class PlateLayout {
 			return;
 		}
 
-		// 1. collapse low-value plates whose full plate would overlap another plate
+		// 1. show details nearby, with the same status dot retained in a distant/crowded pill
 		for (Item a : ITEMS) {
 			Track t = a.t;
-			if (!a.compactable) {
+			if (a.distanceCompact) {
+				t.freeFor = 0;
+				a.compact = true;
+			} else if (!a.compactable) {
 				a.compact = false;
 			} else {
 				boolean blocked = false;

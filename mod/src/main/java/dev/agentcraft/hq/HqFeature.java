@@ -8,12 +8,17 @@ import dev.agentcraft.layout.Anchor;
 import dev.agentcraft.layout.AnchorNames;
 import dev.agentcraft.layout.Anchors;
 import dev.agentcraft.world.HqWorld;
+import dev.agentcraft.world.HqIsland;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Locale;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.storage.LevelResource;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -22,6 +27,8 @@ import org.jspecify.annotations.Nullable;
  * resets them too.
  */
 public final class HqFeature {
+	/** Written by the backed-up Windows updater; consumed only in the named HQ world. */
+	public static final String UPGRADE_MARKER = "t3craft-upgrade-modern";
 	private HqFeature() {
 	}
 
@@ -35,11 +42,31 @@ public final class HqFeature {
 	public static void init() {
 		HqBuilders.register(new TestRoomBuilder());
 		HqBuilders.register(new StudioHqBuilder());
-		HqBuilders.setDefault(StudioHqBuilder.ID);
+		HqBuilders.register(new ModernHqBuilder());
+		HqBuilders.setDefault(ModernHqBuilder.ID);
 		// A fresh HQ world (no saved layout yet) gets the default HQ built before the player joins, so
 		// the first launch walks straight into it. AGENTCRAFT_HQ_AUTOBUILD=0 turns this off.
 		ServerLifecycleEvents.SERVER_STARTED.register(server -> {
-			if (!HqWorld.isHq(server) || !Anchors.current().isEmpty() || !autoBuild()) {
+			if (!HqWorld.isHq(server)) return;
+			Path upgrade = server.getWorldPath(LevelResource.ROOT).resolve(UPGRADE_MARKER);
+			if (Files.isRegularFile(upgrade)) {
+				try {
+					// With no old plan, an automatic replacement cannot identify player edits.
+					if (!ModernHqBuilder.hasSavedPlan(server)) {
+						throw new IOException("Missing saved HQ plan; use /agentcraft hq modern after checking your backup");
+					}
+					HqBuilder modern = HqBuilders.get(ModernHqBuilder.ID);
+					if (modern == null) throw new IllegalStateException("Modern HQ builder unavailable");
+					buildAndPublish(server.overworld(), modern, HqBuilder.Options.DEFAULT);
+					server.saveEverything(false, true, true);
+					Files.delete(upgrade);
+					AgentCraft.LOGGER.info("Completed queued modern HQ upgrade: {}", lastReport);
+				} catch (IOException | RuntimeException e) {
+					AgentCraft.LOGGER.error("Queued HQ upgrade failed; request retained for next launch", e);
+				}
+				return;
+			}
+			if (!Anchors.current().isEmpty() || !autoBuild()) {
 				return;
 			}
 			HqBuilder builder = HqBuilders.get(HqBuilders.defaultId());
@@ -101,11 +128,12 @@ public final class HqFeature {
 		long t0 = System.nanoTime();
 		// another builder rewrites the same ground without a record: the studio's memory of its last
 		// build no longer describes the world
-		PlanStore.invalidateUnless(level.getServer(), builder.id());
+		if (!builder.id().equals(ModernHqBuilder.ID)) PlanStore.invalidateUnless(level.getServer(), builder.id());
 		Anchors.Builder anchors = Anchors.builder(builder.id());
 		lastReport = builder.build(level, anchors, options);
 		Anchors.Layout layout = anchors.build();
 		Anchors.publish(level.getServer(), layout);
+		HqIsland.refresh(level.getServer());
 		Anchor spawn = layout.get(AnchorNames.SPAWN);
 		if (spawn != null) {
 			level.getServer().getCommands().performPrefixedCommand(level.getServer().createCommandSourceStack().withSuppressedOutput(),

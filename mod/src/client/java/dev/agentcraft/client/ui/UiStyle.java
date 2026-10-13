@@ -49,6 +49,7 @@ public final class UiStyle {
 
 	/** Opaque ARGB colour for a token path, e.g. "paper.text", "palette.colors.clay", "palette.ui.panel". */
 	public static int color(String path) {
+		Integer themed = T3Theme.token(path); if (themed != null) return themed;
 		Integer c = COLORS.get(path);
 		if (c == null) {
 			AgentCraft.LOGGER.debug("UiStyle: unknown colour token {}", path);
@@ -58,6 +59,7 @@ public final class UiStyle {
 	}
 
 	public static int color(String path, int fallback) {
+		Integer themed = T3Theme.token(path); if (themed != null) return themed;
 		Integer c = COLORS.get(path);
 		return c == null ? fallback : c;
 	}
@@ -79,6 +81,7 @@ public final class UiStyle {
 
 	/** Agent name colour on paper GUIs. Unknown agent: ink. */
 	public static int agentOnLight(String agentId) {
+		if (T3Theme.dark()) return agentOnDark(agentId);
 		Integer c = COLORS.get("agents." + agentId + ".text_on_light");
 		if (c != null) {
 			return c;

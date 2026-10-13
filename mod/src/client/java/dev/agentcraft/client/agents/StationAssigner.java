@@ -41,7 +41,7 @@ public final class StationAssigner {
 		for (Agent a : agents) {
 			String key = stationKey(a);
 			if (key.equals("desk")) {
-				Anchor desk = layout.get(AnchorNames.desk(a.id()));
+				Anchor desk = workDesk(layout, a.id());
 				if (desk != null) {
 					out.put(a.id(), desk);
 					assigned.put(a.id(), desk.name());
@@ -113,6 +113,25 @@ public final class StationAssigner {
 			out.add(a);
 		}
 		return out;
+	}
+
+	/** Older authored campuses keep their blocks; upstairs workers use existing daylight coworking seats. */
+	public static @Nullable Anchor workDesk(Anchors.Layout layout, String id) {
+		Anchor desk = layout.get(AnchorNames.desk(id));
+		Anchor floor = layout.get("campus_work");
+		if (desk == null || floor == null || !layout.name().equals("modern") || Math.abs(desk.y() - floor.y()) < 1) return desk;
+		List<Anchor> upstairs = dev.agentcraft.Cast.ids().stream().map(agent -> layout.get(AnchorNames.desk(agent)))
+			.filter(a -> a != null && Math.abs(a.y() - floor.y()) >= 1).toList();
+		int index = upstairs.indexOf(desk);
+		List<Anchor> seats = new ArrayList<>();
+		List<Anchor> candidates = new ArrayList<>(slots(layout, AnchorNames.MEETING));
+		candidates.addAll(slots(layout, AnchorNames.LOUNGE));
+		for (Anchor seat : candidates) {
+			if (Math.abs(seat.y() - floor.y()) < 1 && seats.stream().noneMatch(existing -> existing.pos().distanceToSqr(seat.pos()) < .1)) seats.add(seat);
+		}
+		if (index < 0 || index >= seats.size()) return desk;
+		Anchor seat = seats.get(index);
+		return new Anchor(desk.name(), seat.x(), seat.y(), seat.z(), seat.yaw(), seat.pitch());
 	}
 
 	/** Extra agents line up sideways from the primary slot (alternating right/left, 1.1 blocks apart). */

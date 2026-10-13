@@ -13,7 +13,7 @@ import java.util.Set;
 
 /** Saved spatial identity; names and activity order never identify a machine or a desk. */
 final class OfficeRoster {
-	static final int DESKS = 6;
+	static final int DESKS = 18;
 	static final int MAX_NPC_NAME_LENGTH = 32;
 	record Pin(String owner, String threadId, String title) {
 		String key() { return OfficeRoster.key(owner, threadId); }
@@ -22,16 +22,23 @@ final class OfficeRoster {
 		List<Pin> pins = new ArrayList<>();
 		Map<String, Integer> desks = new LinkedHashMap<>();
 		Map<String, String> npcNames = new LinkedHashMap<>();
+		Map<String, String> npcSkins = new LinkedHashMap<>();
+		boolean autoStaffing = true;
+		int fixedNpcCount = DESKS;
+		boolean showProjectLabels = true;
+		Map<String, String> displayViews = new LinkedHashMap<>();
+		String npcSkin(String cast) { String saved = npcSkins.get(cast); return dev.agentcraft.NpcLooks.valid(saved) ? saved : dev.agentcraft.NpcLooks.defaultFor(cast); }
 		String npcName(String cast) {
 			var member = dev.agentcraft.Cast.get(cast);
-			return npcNames.getOrDefault(cast, member == null ? cast : member.name());
+			String skin = npcSkin(cast);
+			return npcNames.getOrDefault(cast, !skin.equals("default") ? dev.agentcraft.NpcLooks.label(skin) : member == null ? cast : member.name());
 		}
 		void renameNpc(String cast, String name) {
 			if (dev.agentcraft.Cast.get(cast) == null) throw new IllegalArgumentException("Unknown NPC.");
 			String error = npcNameError(name);
 			if (error != null) throw new IllegalArgumentException(error);
 			String value = name.strip();
-			if (value.equals(dev.agentcraft.Cast.get(cast).name())) npcNames.remove(cast);
+			if (value.equals(!npcSkin(cast).equals("default") ? dev.agentcraft.NpcLooks.label(npcSkin(cast)) : dev.agentcraft.Cast.get(cast).name())) npcNames.remove(cast);
 			else npcNames.put(cast, value);
 		}
 		boolean pinned(T3State.ThreadRow row) { return pins.stream().anyMatch(p -> p.key().equals(key(row))); }
@@ -45,10 +52,20 @@ final class OfficeRoster {
 			if (pins == null) pins = new ArrayList<>();
 			if (desks == null) desks = new LinkedHashMap<>();
 			if (npcNames == null) npcNames = new LinkedHashMap<>();
+			if (npcSkins == null) npcSkins = new LinkedHashMap<>();
+			if (displayViews == null) displayViews = new LinkedHashMap<>();
+			displayViews.entrySet().removeIf(e -> !dev.agentcraft.DisplayViews.valid(e.getValue()));
+			npcSkins.entrySet().removeIf(e -> dev.agentcraft.Cast.get(e.getKey()) == null || !T3CraftClient.validSkin(e.getValue()));
+			fixedNpcCount = Math.max(1, Math.min(DESKS, fixedNpcCount));
 			npcNames.entrySet().removeIf(e -> dev.agentcraft.Cast.get(e.getKey()) == null || npcNameError(e.getValue()) != null);
 			npcNames.replaceAll((cast, name) -> name.strip());
 			pins.removeIf(p -> p == null || p.owner() == null || p.threadId() == null);
 		}
+	}
+	static int desiredCount(List<T3State.ThreadRow> rows, Preferences prefs) {
+		if (!prefs.autoStaffing) return Math.max(1, Math.min(DESKS, prefs.fixedNpcCount));
+		long busy = rows.stream().filter(r -> r.status() == T3State.Status.WORKING || r.status() == T3State.Status.NEEDS_YOU).count();
+		return (int) Math.min(DESKS, Math.max(Math.max(6, prefs.pins.size()), busy + 2));
 	}
 	static String npcNameError(String name) {
 		if (name == null || name.isBlank()) return "Enter a name.";
@@ -72,6 +89,8 @@ final class OfficeRoster {
 			for (int i = 0; i < prefs.pins.size(); i++) pinOrder.put(prefs.pins.get(i).key(), i);
 			candidates.sort(Comparator.comparingInt((T3State.ThreadRow r) -> pinOrder.containsKey(key(r)) ? 0 : r.status() == T3State.Status.NEEDS_YOU ? 1 : r.status() == T3State.Status.WORKING ? 2 : 3)
 				.thenComparingInt(r -> pinOrder.getOrDefault(key(r), Integer.MAX_VALUE)));
+			// This is the saved campus roster, not the number currently rendered. Keep every slot
+			// available here; the T3 projection applies the user's auto-staffing count to world NPCs.
 			if (candidates.size() > DESKS) candidates = new ArrayList<>(candidates.subList(0, DESKS));
 			boolean[] used = new boolean[DESKS];
 			Map<String, Integer> assigned = new LinkedHashMap<>();

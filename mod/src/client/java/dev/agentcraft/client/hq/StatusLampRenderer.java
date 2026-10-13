@@ -50,6 +50,10 @@ public class StatusLampRenderer extends StationRenderer<StatusLampBlockEntity, S
 	static final int CARD_W = 236;
 	static final int CARD_H = 92;
 	static final float K = 0.74f;
+	private static final float DASHBOARD_Y = 4.55f;
+	private static final float DASHBOARD_SCALE = 0.46f;
+	private static final int DASHBOARD_W = 320;
+	private static final int DASHBOARD_H = 170;
 	static final int TEXT_W = 176;
 
 	public static class State extends StationRenderState {
@@ -66,6 +70,7 @@ public class StatusLampRenderer extends StationRenderer<StatusLampBlockEntity, S
 		public String line2a = "";
 		public String line2b = "";
 		public int cardW = CARD_W;
+		public dev.agentcraft.client.monitor.StudioDashboard.Data dashboard;
 		/** Waiting niche glow (lamps bound {@code decisions} / {@code merge}): face with air in front, frame half width (blocks). */
 		public @Nullable Direction frameFace;
 		public float frameHalf;
@@ -90,6 +95,7 @@ public class StatusLampRenderer extends StationRenderer<StatusLampBlockEntity, S
 	protected void extractStation(StatusLampBlockEntity be, State s, float partialTicks) {
 		s.status = be.getBlockState().getValue(StatusLampBlock.STATUS);
 		s.hologram = ATRIUM_BINDING.equals(s.binding);
+		s.dashboard = s.hologram && Foreman.isT3() ? dev.agentcraft.client.monitor.StudioDashboard.extract(dev.agentcraft.client.t3.T3CraftClient.get().displayView("atrium"), "feed") : null;
 		ForemanState fs = Foreman.state();
 		// offline: the lamps hold their last state, but nothing pretends you are needed right now
 		s.stale = fs == null || fs.isStale();
@@ -117,8 +123,12 @@ public class StatusLampRenderer extends StationRenderer<StatusLampBlockEntity, S
 			extractHologram(s);
 			// nameplates near the plinth lift clear of the goal panel instead of hiding behind it
 			net.minecraft.core.BlockPos p = be.getBlockPos();
-			dev.agentcraft.client.agents.PlateLayout.reserve(p.getX() + 0.5, p.getY() + HOLO_Y - CARD_H / 2f * WorldUi.PX * K, p.getZ() + 0.5,
-				s.cardW + 8, CARD_H + 8, WorldUi.PX * K);
+			float scale = s.dashboard == null ? K : DASHBOARD_SCALE;
+			float center = s.dashboard == null ? HOLO_Y : DASHBOARD_Y;
+			int cardHeight = s.dashboard == null ? CARD_H : DASHBOARD_H;
+			int cardWidth = s.dashboard == null ? s.cardW : DASHBOARD_W;
+			dev.agentcraft.client.agents.PlateLayout.reserve(p.getX() + 0.5, p.getY() + center - cardHeight / 2f * WorldUi.PX * scale, p.getZ() + 0.5,
+				cardWidth + 8, cardHeight + 8, WorldUi.PX * scale);
 		}
 	}
 
@@ -379,10 +389,12 @@ public class StatusLampRenderer extends StationRenderer<StatusLampBlockEntity, S
 
 	// ------------------------------------------------------------------ hologram
 
-	/** Two crossed, upward-fading additive planes from the lens to the card. */
+	/** Two crossed, upward-fading additive planes from the lens to just below the hologram card. */
 	private static void beam(State s, PoseStack poseStack, SubmitNodeCollector collector) {
 		float bottom = 1.02f;
-		float top = HOLO_Y - CARD_H / 2f * WorldUi.PX * K + 0.05f;
+		// Match the actual card geometry so its beam and nameplate reservation share the same edges.
+		float cardHalfHeight = s.dashboard == null ? CARD_H / 2f * K * WorldUi.PX : DASHBOARD_H / 2f * DASHBOARD_SCALE * WorldUi.PX;
+		float top = (s.dashboard == null ? HOLO_Y : DASHBOARD_Y) - cardHalfHeight - 0.03f;
 		float pulse = 0.85f + 0.15f * (float) Math.sin(s.timeSeconds * 1.3);
 		int base = s.hasGoal ? s.statusColor : UiStyle.CREAM;
 		int lo = ((int) (115 * pulse * (s.stale ? 0.4f : 1f)) << 24) | (base & 0xFFFFFF);
@@ -417,6 +429,15 @@ public class StatusLampRenderer extends StationRenderer<StatusLampBlockEntity, S
 	}
 
 	private static void card(State s, PoseStack poseStack, SubmitNodeCollector collector, CameraRenderState camera) {
+		if (s.dashboard != null) {
+			poseStack.pushPose();
+			WorldUi.billboard(poseStack, camera, .5, DASHBOARD_Y, .5);
+			poseStack.scale(DASHBOARD_SCALE, DASHBOARD_SCALE, -DASHBOARD_SCALE);
+			poseStack.translate(-DASHBOARD_W / 2f, -DASHBOARD_H / 2f, 0);
+			if (s.dashboard.view().equals("usage")) dev.agentcraft.client.monitor.UsageWall.submitBillboard(poseStack, collector);
+			else dev.agentcraft.client.monitor.StudioDashboard.submit(s.dashboard, DASHBOARD_W, DASHBOARD_H, poseStack, collector);
+			poseStack.popPose(); return;
+		}
 		Font font = Minecraft.getInstance().font;
 		int light = WorldUi.uiLight();
 		float bob = 0.04f * (float) Math.sin(s.timeSeconds * 0.9);

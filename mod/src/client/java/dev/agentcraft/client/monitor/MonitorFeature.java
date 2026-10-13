@@ -41,10 +41,10 @@ import org.jspecify.annotations.Nullable;
  */
 public final class MonitorFeature {
 	public enum Look {
-		PAPER, DARK, SPLIT
+		THEME, PAPER, DARK, SPLIT
 	}
 
-	private static Look look = Look.DARK;
+	private static Look look = Look.THEME;
 	private static final Map<String, Long> LOG_SEQ = new HashMap<>();
 	private static final Map<String, Long> AGENT_SEQ = new HashMap<>();
 	private static long epoch;
@@ -59,11 +59,12 @@ public final class MonitorFeature {
 	public static void init() {
 		BlockEntityRenderers.register(ModBlockEntities.MONITOR, ctx -> new MonitorRenderer());
 		dev.agentcraft.client.world.StationInteractions.onUse(dev.agentcraft.block.ModBlocks.MONITOR, (player,pos,state,be) -> {
-			if (!(be instanceof MonitorBlockEntity monitor)) return;
 			var panel = dev.agentcraft.block.PanelBlock.origin(player.level(),pos,state);
-			String agent = RESOLVED.getOrDefault(panel, monitor.binding().isEmpty() ? "feed" : monitor.binding());
-			if (agent.equals("feed")) dev.agentcraft.client.t3.T3CraftClient.get().openBoard();
-			else dev.agentcraft.client.foreman.T3Projection.openAgent(agent);
+			if (!(player.level().getBlockEntity(panel) instanceof MonitorBlockEntity monitor)) return;
+			var panelState = player.level().getBlockState(panel);
+			int[] size = dev.agentcraft.block.PanelBlock.extent(player.level(), panel, panelState);
+			String agent = resolveAgent(monitor, monitor.binding(), panelState.getValue(dev.agentcraft.block.PanelBlock.FACING), size[0], size[1]);
+			dev.agentcraft.client.t3.T3CraftClient.get().openDisplay(displayKey(panel), agent);
 		});
 		Foreman.addListener(new ForemanListener() {
 			@Override
@@ -158,6 +159,7 @@ public final class MonitorFeature {
 
 	static ScreenStyle styleFor(BlockPos origin) {
 		return switch (look) {
+			case THEME -> ScreenStyle.current();
 			case PAPER -> ScreenStyle.PAPER;
 			case DARK -> ScreenStyle.DARK;
 			case SPLIT -> ((origin.getX() + origin.getZ()) & 2) == 0 ? ScreenStyle.PAPER : ScreenStyle.DARK;
@@ -167,6 +169,7 @@ public final class MonitorFeature {
 	public static Look look() {
 		return look;
 	}
+	public static String displayKey(BlockPos origin) { return "monitor:" + origin.getX() + "," + origin.getY() + "," + origin.getZ(); }
 
 	/**
 	 * The agent a monitor shows: its binding, else the agent whose {@code monitor_<id>} anchor lies

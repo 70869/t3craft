@@ -7,14 +7,14 @@ import net.minecraft.network.chat.Component;
 import java.util.*;
 
 /** Saved-chat library and checkpoint desk share discovery, but dispatch only their explicit read action. */
-final class T3LibraryScreen extends Screen {
+final class T3LibraryScreen extends T3MenuScreen {
     private final T3CraftClient mod; private final boolean review;
     private int page; private EditBox search; private String query="";
     private List<T3State.ThreadRow> rendered=List.of();
     T3LibraryScreen(T3CraftClient mod,boolean review) { super(Component.literal(review ? "T3 checkpoint desk" : "T3 history library")); this.mod=mod; this.review=review; }
     @Override protected void init() {
         clearWidgets(); rows.clear();
-        search=addRenderableWidget(new EditBox(font,16,38,width-32,20,Component.literal("Search saved T3 chats"))); search.setValue(query);
+        search=addRenderableWidget(new EditBox(font,16,38,width-32,20,Component.literal("Search saved T3 chats"))); placeholder(search,"Search chats or projects…"); search.setValue(query);
         search.setResponder(value->{query=value;page=0;rebuildRows();}); rebuildRows();
     }
     private final List<Button> rows=new ArrayList<>();
@@ -35,13 +35,13 @@ final class T3LibraryScreen extends Screen {
         rows.add(addRenderableWidget(Button.builder(Component.literal("Done"),b->onClose()).bounds(width-76,height-30,60,20).build()));
     }
     @Override public boolean isPauseScreen() { return false; }
-    @Override public boolean isInGameUi() { return true; }
+    @Override public boolean isInGameUi() { return false; }
     @Override public void extractRenderState(GuiGraphicsExtractor g,int mx,int my,float delta) {
-        g.fill(8,8,width-8,height-8,0xF0222529); g.text(font,(review ? "T3 checkpoint desk" : "Saved T3 chat library")+" · "+rendered.size()+" chats",16,18,0xFFFFFFFF,false);
+        paper(g, 8,8,width-8,height-8); g.text(font,(review ? "T3 checkpoint desk" : "Saved T3 chat library")+" · "+rendered.size()+" chats",16,18,INK,false);
         int count=Math.max(1,(height-112)/30);
         for(int i=page*count;i<Math.min(rendered.size(),(page+1)*count);i++) { var row=rendered.get(i); int y=68+(i-page*count)*30;
-            g.text(font,T3Hud.ellipsize(font,row.title(),width-166),16,y+1,0xFFD4D4D4,false);
-            g.text(font,T3Hud.ellipsize(font,row.projectTitle()+" · "+(mod.state().online(row.id()) ? StudioProjection.label(row.status()) : "Offline"),width-166),16,y+13,0xFFA8A8A8,false);
+            g.text(font,T3Hud.ellipsize(font,row.title(),width-166),16,y+1,INK,false);
+            g.text(font,T3Hud.ellipsize(font,row.environment()+" · "+row.projectTitle()+" · "+(mod.state().online(row.id()) ? StudioProjection.label(row.status()) : "Offline"),width-166),16,y+13,MUTED,false);
         }
         super.extractRenderState(g,mx,my,delta);
     }

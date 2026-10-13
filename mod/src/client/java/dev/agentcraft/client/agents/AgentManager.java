@@ -30,8 +30,8 @@ import org.jspecify.annotations.Nullable;
  * state model and the anchor layout (client thread, every client tick):
  * <ul>
  *   <li>new agent: spawned standing at its target anchor (no walk-in from nowhere);</li>
- *   <li>station/active change: walks there along a {@link GridPathfinder} route (teleports if
- *       there is no route, e.g. the HQ was rebuilt around it);</li>
+ *   <li>station/active change: walks there along a {@link GridPathfinder} route, waiting on safe
+ *       ground and retrying when new construction blocks it;</li>
  *   <li>agent gone after a snapshot: removed;</li>
  *   <li>Foreman link down: agents stay where they are with a dimmed "Foreman offline" plate;</li>
  *   <li>layout republished ({@code /agentcraft hq}): everyone is placed at their new anchors.</li>
@@ -47,8 +47,8 @@ import org.jspecify.annotations.Nullable;
  */
 public final class AgentManager {
 	private static final AgentManager INSTANCE = new AgentManager();
-	/** Teleport instead of walking when the route is longer than this (blocks). */
-	private static final double MAX_WALK = 96;
+	/** Bound campus routes; longer routes wait instead of phasing through the world. */
+	private static final double MAX_WALK = 192;
 	/** Ticks it takes to get up from a seat before walking off. */
 	private static final int STAND_UP_TICKS = 8;
 	/** A waiting agent re-approaches you once you moved this far from where it chose its spot (blocks). */
@@ -69,6 +69,23 @@ public final class AgentManager {
 	private int nextEntityId = -10_000;
 	private int pathFailures;
 	private long ticks;
+	private record Retry(Anchor target, long after) {}
+	private final Map<String, Retry> retryAfter = new HashMap<>();
+	private final Map<String, Retry> previewTargets = new HashMap<>();
+
+	/** Fixture-only DevBridge caller supplies a bounded preview; no saved assignment/world writes. */
+	public void previewWalk(String id, Vec3 from, Vec3 to) {
+		ClientAgentEntity e = entities.get(id);
+		if (e == null || level == null) throw new IllegalArgumentException("Unknown resident");
+		var pf = new GridPathfinder(level, Anchors.current().bounds());
+		if (!pf.clear(from, from) || !pf.clear(to, to) || pf.find(from, to) == null)
+			throw new IllegalArgumentException("Preview endpoints must be reachable floor positions");
+		Anchor start = new Anchor("qa@" + id, from.x, from.y, from.z, e.getYRot(), 0);
+		e.life().setSeat(null);
+		place(e, start);
+		previewTargets.put(id, new Retry(new Anchor(start.name(), to.x, to.y, to.z, e.getYRot(), 0), ticks + 1200));
+	}
+	public void clearPreviews() { previewTargets.clear(); }
 
 	/** Where a waiting agent stands near the player, and where the player was when it was chosen. */
 	private record UserSpot(Anchor spot, Vec3 playerAt) {
@@ -125,7 +142,9 @@ public final class AgentManager {
 			assigner.clear();
 			seats.clear();
 			userSpots.clear();
+			retryAfter.clear();
 			level = lvl;
+			previewTargets.clear();
 			layoutRevision = -1;
 		}
 		if (lvl == null) {
@@ -143,7 +162,9 @@ public final class AgentManager {
 		if (relayout) {
 			seats.clear();
 			userSpots.clear();
+			retryAfter.clear();
 		}
+		if (relayout) previewTargets.clear();
 		List<Agent> agents = new ArrayList<>(st.agents().values());
 		Map<String, Anchor> targets = layout.isEmpty() ? fallbackTargets(agents, lvl) : assigner.assign(agents, layout);
 		boolean stale = st.isStale();
@@ -151,16 +172,20 @@ public final class AgentManager {
 		GridPathfinder pf = layout.isEmpty() ? null : new GridPathfinder(lvl, layout.bounds());
 		Vec3 playerFeet = layout.isEmpty() ? null : playerInHq(mc, layout, pf);
 		int waitingIndex = 0;
+		// Two stable request owners approach; the rest remain visible at their own desks.
+		Set<String> approaching = new java.util.LinkedHashSet<>();
 		int waitingCount = 0;
 		if (playerFeet != null) {
 			for (Agent a : agents) {
-				if (followsPlayer(a)) {
+				if (followsPlayer(a) && (!Foreman.isT3() || !dev.agentcraft.client.foreman.T3Projection.agentOffline(a.id())) && approaching.size() < 2) {
+					approaching.add(a.id());
 					waitingCount++;
 				}
 			}
 		}
 
 		Set<String> keep = new HashSet<>();
+		List<Vec3> reserved = new ArrayList<>();
 		for (Agent a : agents) {
 			Anchor target = targets.get(a.id());
 			if (target == null) {
@@ -168,7 +193,8 @@ public final class AgentManager {
 			}
 			keep.add(a.id());
 			ClientAgentEntity e = entities.get(a.id());
-			if (e == null || e.isRemoved() || e.level() != lvl) {
+			boolean created = e == null || e.isRemoved() || e.level() != lvl;
+			if (created) {
 				e = spawn(lvl, a, target);
 				entities.put(a.id(), e);
 				byEntityId.put(e.getId(), e);
@@ -179,23 +205,46 @@ public final class AgentManager {
 			AgentView v = e.view();
 			boolean agentStale = stale || Foreman.isT3() && dev.agentcraft.client.foreman.T3Projection.agentOffline(a.id());
 			v.update(a, agentStale, awaiting.get(a.id()), awaitingCounts.getOrDefault(a.id(), 0));
+			var chat = Foreman.isT3() ? dev.agentcraft.client.foreman.T3Projection.agentThread(a.id()) : null;
+			v.threadTitle = chat == null ? "" : chat.title();
+			v.reviewReady = chat != null && !agentStale && (chat.status() == dev.agentcraft.client.t3.T3State.Status.DONE || chat.status() == dev.agentcraft.client.t3.T3State.Status.IDLE)
+				&& dev.agentcraft.client.t3.T3CraftClient.get().reviewReady(chat.id());
 			v.station = StationAssigner.stationKey(a);
 			v.anchor = target.name();
-			if (playerFeet != null && !agentStale && followsPlayer(a)) {
+			if (playerFeet != null && !agentStale && approaching.contains(a.id())) {
 				Anchor near = userSpot(a.id(), e, playerFeet, waitingIndex++, waitingCount, pf);
 				if (near != null) {
 					target = near;
 				}
 			} else {
 				userSpots.remove(a.id());
+				if (Foreman.isT3() && followsPlayer(a)) {
+					Anchor desk = StationAssigner.workDesk(layout, a.id());
+					if (desk != null) { target = desk; v.station = "desk"; v.anchor = desk.name(); }
+				}
+			}
+			Retry preview = previewTargets.get(a.id());
+			if (preview != null) {
+				if (ticks < preview.after()) target = preview.target();
+				else previewTargets.remove(a.id());
 			}
 			Seats.Seat seat = pf == null ? null : seats.at(lvl, target, ticks, pf);
+			Vec3 chair = seat == null ? null : seat.sit();
+			if (seat != null && (reserved.stream().anyMatch(p -> ResidentSpacing.overlaps(p, chair))
+				|| taken(e.agentId(), seat.sit()))) seat = null;
 			Anchor effective = seat != null ? seat.target() : target;
-			if (relayout) {
+			if (seat == null && pf != null) {
+				Anchor free = freeStanding(target, e, pf, reserved);
+				if (free == null) { e.life().setSeat(null); e.motion().stop(); continue; }
+				effective = free;
+			}
+			reserved.add(effective.pos());
+			if (relayout || created) {
 				e.life().setSeat(seat);
 				place(e, effective);
 			} else if (!agentStale) {
 				retarget(lvl, layout, e, effective, seat);
+				avoidCrowd(e, pf);
 			}
 		}
 		for (var it = entities.entrySet().iterator(); it.hasNext();) {
@@ -206,6 +255,21 @@ public final class AgentManager {
 				it.remove();
 			}
 		}
+	}
+
+	boolean crowdClear(ClientAgentEntity e, Vec3 from, Vec3 to) {
+		for (ClientAgentEntity other : entities.values()) {
+			if (other != e && !other.isRemoved() && !ResidentSpacing.clear(from, to, other.position())) return false;
+		}
+		return true;
+	}
+
+	/** Try a short, floor-checked right/left detour after yielding; never push through bodies/walls. */
+	private void avoidCrowd(ClientAgentEntity e, @Nullable GridPathfinder pf) {
+		Vec3 next = e.motion().nextPoint();
+		if (pf == null || next == null || e.motion().crowdWait() < 12 || e.motion().crowdWait() % 12 != 0) return;
+		List<Vec3> detour = ResidentSpacing.detour(e.position(), next, (from, to) -> pf.clear(from, to) && crowdClear(e, from, to));
+		if (!detour.isEmpty()) e.motion().detour(detour);
 	}
 
 	private static boolean followsPlayer(Agent a) {
@@ -286,7 +350,7 @@ public final class AgentManager {
 	 */
 	private @Nullable Anchor userSpot(String agentId, ClientAgentEntity e, Vec3 player, int index, int count, GridPathfinder pf) {
 		UserSpot prev = userSpots.get(agentId);
-		if (prev != null && prev.playerAt().distanceTo(player) < FOLLOW_SLACK) {
+		if (prev != null && prev.playerAt().distanceTo(player) < FOLLOW_SLACK && pf.clear(prev.spot().pos(), prev.spot().pos())) {
 			return prev.spot();
 		}
 		double base = Math.atan2(e.getZ() - player.z, e.getX() - player.x);
@@ -331,8 +395,10 @@ public final class AgentManager {
 			}
 		}
 		for (ClientAgentEntity o : entities.values()) {
-			if (!o.agentId().equals(agentId) && !o.motion().walking() && o.position().distanceToSqr(at) < 0.9 * 0.9) {
-				return true;
+			if (!o.agentId().equals(agentId)) {
+				Anchor destination = o.motion().target();
+				if (destination != null && ResidentSpacing.overlaps(destination.pos(), at)) return true;
+				if (!o.motion().walking() && ResidentSpacing.overlaps(o.position(), at)) return true;
 			}
 		}
 		return false;
@@ -369,7 +435,13 @@ public final class AgentManager {
 
 	private void retarget(ClientLevel lvl, Anchors.Layout layout, ClientAgentEntity e, Anchor target, Seats.@Nullable Seat seat) {
 		Anchor current = e.motion().target();
-		if (current != null && current.name().equals(target.name()) && current.pos().distanceToSqr(target.pos()) < 1e-4) {
+		Retry retry = retryAfter.get(e.agentId());
+		if (retry != null && retry.target().name().equals(target.name()) && retry.target().pos().distanceToSqr(target.pos()) < 1e-4
+			&& Math.abs(net.minecraft.util.Mth.wrapDegrees(retry.target().yaw() - target.yaw())) < .1 && ticks < retry.after()) return;
+		if (current != null && current.name().equals(target.name()) && current.pos().distanceToSqr(target.pos()) < 1e-4
+			&& Math.abs(net.minecraft.util.Mth.wrapDegrees(current.yaw() - target.yaw())) < .1
+			&& (e.motion().walking() || e.position().distanceToSqr(target.pos()) < 1e-4)) {
+			e.life().setSeat(seat); // refresh removed chairs and changed desk surfaces even without movement
 			return;
 		}
 		GridPathfinder pf = new GridPathfinder(lvl, layout.bounds());
@@ -377,7 +449,7 @@ public final class AgentManager {
 		List<Vec3> route = new ArrayList<>();
 		Vec3 start = e.position();
 		int delay = 0;
-		Seats.Seat from = life.seat();
+		Seats.Seat from = Seats.detect(lvl, new Anchor("departing", e.getX(), e.getY(), e.getZ(), e.getYRot(), 0), pf);
 		if (from != null && life.sitAmount() > 0f && !e.motion().walking()) {
 			// get up first, then step out of the seat to its free side
 			delay = STAND_UP_TICKS;
@@ -390,10 +462,16 @@ public final class AgentManager {
 		List<Vec3> path = start.distanceToSqr(dest) < 1e-6 ? List.of(start, dest) : pf.find(start, dest);
 		if (path == null || length(path) > MAX_WALK) {
 			pathFailures++;
-			AgentCraft.LOGGER.info("Agent {}: no walkable route to {} ({}), teleporting", e.agentId(), target.name(),
+			retryAfter.put(e.agentId(), new Retry(target, ticks + 40));
+			AgentCraft.LOGGER.debug("Agent {}: route to {} unavailable ({}); holding on safe ground", e.agentId(), target.name(),
 				path == null ? "no path" : "too far");
-			life.setSeat(seat);
-			place(e, target);
+			// Stay on safe ground if a player sealed the destination; do not phase through walls.
+			life.setSeat(null);
+			if (pf.cellAt(e.position()) == null) {
+				Anchor safe = freeStanding(new Anchor(target.name(), e.getX(), e.getY(), e.getZ(), target.yaw(), 0), e, pf);
+				if (safe != null) place(e, safe);
+			}
+			e.motion().stop();
 			return;
 		}
 		route.addAll(path);
@@ -401,7 +479,43 @@ public final class AgentManager {
 			route.add(target.pos()); // the last step: onto the seat
 		}
 		life.setSeat(seat);
+		retryAfter.remove(e.agentId());
 		e.motion().walkTo(target, route, delay);
+	}
+
+	/** Immediate next-step guard, independent of the less frequent station/seat refresh. */
+	boolean canAdvance(ClientAgentEntity e) {
+		Vec3 next = e.motion().nextPoint();
+		if (next == null || level == null) return true;
+		Seats.Seat seat = e.life().seat();
+		if (seat != null && e.position().distanceToSqr(seat.sit()) < 2.25 && next.distanceToSqr(seat.sit()) < .01
+			&& Seats.detect(level, seat.anchor(), null) != null) return true;
+		var pf = new GridPathfinder(level, Anchors.current().bounds());
+		Seats.Seat from = Seats.detect(level, new Anchor("departing", e.getX(), e.getY(), e.getZ(), e.getYRot(), 0), pf);
+		if (from != null && next.distanceToSqr(e.position()) < 2.25 && pf.clear(next, next)) return true;
+		Vec3 delta = next.subtract(e.position());
+		Vec3 to = e.position().add(delta.scale(Math.min(1, .4 / Math.max(.001, delta.length()))));
+		// Vertical path segments use the already-checked stair cells; still check landing headroom.
+		if (Math.abs(delta.y) > .2) return pf.cellAt(to) != null;
+		return pf.clear(e.position(), to);
+	}
+
+	private @Nullable Anchor freeStanding(Anchor target, ClientAgentEntity e, GridPathfinder pf) {
+		return freeStanding(target, e, pf, List.of());
+	}
+
+	private @Nullable Anchor freeStanding(Anchor target, ClientAgentEntity e, GridPathfinder pf, List<Vec3> reserved) {
+		if (pf.clear(target.pos(), target.pos()) && !taken(e.agentId(), target.pos())
+			&& reserved.stream().noneMatch(p -> ResidentSpacing.overlaps(p, target.pos()))) return target;
+		for (int radius = 1; radius <= 3; radius++) for (int dx = -radius; dx <= radius; dx++) for (int dz = -radius; dz <= radius; dz++) {
+			if (Math.max(Math.abs(dx), Math.abs(dz)) != radius) continue;
+			int x = (int) Math.floor(target.x()) + dx, z = (int) Math.floor(target.z()) + dz;
+			double floor = pf.floor(x, (int) Math.floor(target.y()), z);
+			if (Double.isNaN(floor)) continue;
+			Vec3 at = new Vec3(x + .5, floor, z + .5);
+			if (pf.clear(at, at) && !taken(e.agentId(), at) && reserved.stream().noneMatch(p -> ResidentSpacing.overlaps(p, at))) return new Anchor(target.name(), at.x, at.y, at.z, target.yaw(), target.pitch());
+		}
+		return null;
 	}
 
 	private static double length(List<Vec3> route) {

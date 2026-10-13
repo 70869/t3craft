@@ -9,7 +9,7 @@ import net.minecraft.network.chat.Component;
 import java.util.List;
 
 /** Unavailable pins remain visible and removable without sending anything to T3. */
-final class T3PinsScreen extends Screen {
+final class T3PinsScreen extends T3MenuScreen {
 	private final T3CraftClient mod;
 	private int page;
 	private final java.util.Map<OfficeRoster.Pin, Button> openButtons = new java.util.HashMap<>();
@@ -43,16 +43,16 @@ final class T3PinsScreen extends Screen {
 	@Override public boolean isPauseScreen() { return false; }
 	@Override public void onClose() { mod.openPanel(); }
 	@Override public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float a) {
-		g.fill(10, 10, width - 10, height - 10, 0xF0101014);
-		g.text(font, "Pinned desks · this world", 20, 20, 0xFFFFFFFF, false);
-		g.text(font, "Six desks shared by all machines. Pins do not change T3 permissions.", 20, 32, 0xFF9CA3AF, false);
+		paper(g, 10, 10, width - 10, height - 10);
+		g.text(font, "Pinned desks · this world", 20, 20, INK, false);
+		g.text(font, "Six desks shared by all machines. Pins do not change T3 permissions.", 20, 32, MUTED, false);
 		int count = Math.max(1, (height - 95) / 32);
-		if (shown.isEmpty()) g.text(font, "Open a thread and choose Pin desk to keep it in the office.", 20, 52, 0xFF9CA3AF, false);
+		if (shown.isEmpty()) g.text(font, "Open a thread and choose Pin desk to keep it in the office.", 20, 52, MUTED, false);
 		for (int i = page * count; i < Math.min(shown.size(), (page + 1) * count); i++) {
 			OfficeRoster.Pin pin = shown.get(i); T3State.ThreadRow row = row(pin); int y = 48 + (i - page * count) * 32;
-			g.text(font, T3Hud.ellipsize(font, row == null ? pin.title() : row.title(), width - 166), 20, y + 1, 0xFFE5E7EB, false);
+			g.text(font, T3Hud.ellipsize(font, row == null ? pin.title() : row.title(), width - 166), 20, y + 1, INK, false);
 			String status = row == null ? "Unavailable / archived" : mod.state().online(row.id()) ? T3Hud.label(row.status()) : "Offline";
-			g.text(font, T3Hud.ellipsize(font, mod.machineLabel(pin.owner()) + " · " + status, width - 166), 20, y + 12, 0xFF9CA3AF, false);
+			g.text(font, T3Hud.ellipsize(font, mod.machineLabel(pin.owner()) + " · " + status, width - 166), 20, y + 12, MUTED, false);
 		}
 		super.extractRenderState(g, mouseX, mouseY, a);
 	}

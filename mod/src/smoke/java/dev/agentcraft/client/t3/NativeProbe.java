@@ -11,6 +11,10 @@ public final class NativeProbe {
 		if (!config.paired()) throw new IllegalStateException("Pair the client first.");
 		var env = config.environments.getFirst();
 		var api = new T3Api(env.baseUrl, env.accessToken);
+		var usage = api.usage("Paired machine");
+		System.out.println("Native usage: quota windows=" + usage.limits().size()
+			+ ", token summary=" + usage.lines().stream().anyMatch(line -> line.startsWith("Total tokens"))
+			+ ", checked timestamp=" + !usage.readAt().isBlank());
 		var shell = api.shell();
 		var threads = shell.getAsJsonArray("threads");
 		if (threads.isEmpty()) throw new IllegalStateException("T3 has no existing chats.");

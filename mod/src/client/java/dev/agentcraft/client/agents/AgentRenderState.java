@@ -43,6 +43,10 @@ public class AgentRenderState extends AvatarRenderState {
 	public float sitDrop;
 	/** Open book in the hands (0 = none, 1 = open). */
 	public float book;
+	public AgentExpression expression = AgentExpression.NONE;
+	public float typing, mouse, keyRight, keyLeft;
+	/** Actual desk surface relative to feet; NaN when no suitable seated desk exists. */
+	public float deskSurface = Float.NaN;
 	/** Page flip progress 0..1 of the held book. */
 	public float pageFlip;
 	/** Height of the plate's natural bottom above the feet (blocks): {@link Nameplate#HEIGHT} + seat drop. */
@@ -70,4 +74,6 @@ public class AgentRenderState extends AvatarRenderState {
 	public float partialTick;
 	/** Light at the agent (for lit extras like the book). */
 	public int agentLight;
+	/** Current cosmetic activity, never an execution or thread state. */
+	public ResidentGestures.Gesture gesture = ResidentGestures.Gesture.NONE;
 }

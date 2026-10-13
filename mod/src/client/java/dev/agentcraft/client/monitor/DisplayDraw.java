@@ -7,6 +7,7 @@ import com.mojang.renderpearl.api.GpuFormat;
 import com.mojang.renderpearl.api.pipeline.ColorTargetState;
 import com.mojang.renderpearl.api.pipeline.RenderPipeline;
 import dev.agentcraft.AgentCraft;
+import dev.agentcraft.client.ui.ShaderRenderCompatibility;
 import dev.agentcraft.client.ui.WorldUi;
 import java.util.HashMap;
 import java.util.Map;
@@ -39,7 +40,7 @@ import net.minecraft.resources.Identifier;
  */
 public final class DisplayDraw {
 	/** One layer step towards the viewer, in blocks (face space z is not scaled). */
-	public static final float Z_STEP = -0.0012f;
+	public static final float Z_STEP = -0.004f;
 	private static final Identifier WHITE = AgentCraft.id("dynamic/displays_white");
 	private static boolean whiteReady;
 	private static RenderPipeline solidPipeline;
@@ -60,6 +61,7 @@ public final class DisplayDraw {
 
 	/** Opaque (solid pass, depth-writing) quads sampling {@code texture} (texels under 10 % alpha are cut out). */
 	public static RenderType solid(Identifier texture) {
+		if (ShaderRenderCompatibility.useVanillaWorldPipelines()) return RenderTypes.text(texture);
 		RenderType t = SOLID.get(texture);
 		if (t == null) {
 			if (solidPipeline == null) {
@@ -68,7 +70,7 @@ public final class DisplayDraw {
 					.withColorTargetState(new ColorTargetState(Optional.empty(), GpuFormat.RGBA8_UNORM, ColorTargetState.WRITE_COLOR))
 					.build();
 			}
-			t = RenderType.create("agentcraft_displays_solid",
+			if (t == null) t = RenderType.create("agentcraft_displays_solid",
 				RenderSetup.builder(solidPipeline).withTexture("Sampler0", texture).useLightmap().createRenderSetup());
 			SOLID.put(texture, t);
 		}

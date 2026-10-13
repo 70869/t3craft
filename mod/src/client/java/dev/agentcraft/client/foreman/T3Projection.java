@@ -33,14 +33,21 @@ public final class T3Projection {
         status.addProperty("auth",live ? "ok" : client.paired() ? "checking" : "unknown");
         status.addProperty("message",live ? snapshot.threads().size()+" T3 chats" : client.paired() ? snapshot.error() : "Press backtick to pair T3");
         json.add("foreman",status); var agents=new JsonArray(); var decisionBindings=new HashMap<String,String>();
+        int visibleCount=client.visibleNpcCount();
+        var selected=new LinkedHashSet<String>(bindings.keySet());
+        for(var cast:Cast.members().values()) { if(selected.size()>=visibleCount) break; selected.add(cast.id()); }
         for(var cast:Cast.members().values()) {
+            if(!selected.contains(cast.id())) continue;
             var row=bindings.get(cast.id()); boolean offline=row!=null&&!online.contains(row.id());
-            var agent=new JsonObject(); agent.addProperty("id",cast.id()); agent.addProperty("name",client.npcName(cast.id())); agent.addProperty("skin",cast.id());
+            var agent=new JsonObject(); agent.addProperty("id",cast.id()); agent.addProperty("name",client.npcName(cast.id())); agent.addProperty("skin",client.npcSkinResource(cast.id()));
             agent.addProperty("role",cast.role()); agent.addProperty("title",row==null ? "T3 chat desk" : row.title());
+            if(row!=null && client.showProjectLabels()) agent.addProperty("projectTitle",row.projectTitle());
             agent.addProperty("color",String.format("#%06X",cast.color())); agent.addProperty("active",row!=null); agent.addProperty("paused",false);
-            String visual=row==null||offline ? "idle" : switch(row.status()) { case WORKING -> "running"; case NEEDS_YOU -> "waiting_user"; case DONE -> "done"; case ERROR -> "error"; default -> "idle"; };
-            agent.addProperty("state",visual); agent.addProperty("station",visual.equals("waiting_user") ? "user" : visual.equals("running") ? "desk" : "lounge");
-            agent.addProperty("activity",row==null ? "No T3 chat attached" : offline ? "T3 machine offline · "+row.title() : row.status()==T3State.Status.NEEDS_YOU && client.state().waitingDetail(row.id())!=null ? client.state().waitingDetail(row.id()) : row.title());
+            var activity=row==null ? StudioProjection.WorkActivity.IDLE : StudioProjection.workActivity(row,details.get(row.id()));
+            String visual=row==null||offline ? "idle" : switch(row.status()) { case WORKING -> activity.wire(); case NEEDS_YOU -> "waiting_user"; case DONE -> "done"; case ERROR -> "error"; default -> "idle"; };
+            boolean review=row!=null&&!offline&&client.reviewReady(row.id())&&(row.status()==T3State.Status.DONE||row.status()==T3State.Status.IDLE);
+            agent.addProperty("state",visual); agent.addProperty("station",visual.equals("waiting_user") ? "user" : row!=null&&!offline&&(row.status()==T3State.Status.WORKING||row.status()==T3State.Status.ERROR||review) ? "desk" : "lounge");
+            agent.addProperty("activity",row==null ? "Right-click to assign a chat" : offline ? "Offline · right-click to reconnect" : row.status()==T3State.Status.NEEDS_YOU ? "Answer request · "+(client.state().waitingDetail(row.id())==null ? "right-click" : client.state().waitingDetail(row.id())) : row.status()==T3State.Status.WORKING ? activity.label()+" · "+row.title() : row.status()==T3State.Status.ERROR ? "Run failed · right-click to inspect" : review ? "Review ready · right-click" : row.status()==T3State.Status.DONE ? "Reply ready · "+row.title() : row.title());
             if(row!=null) { agent.addProperty("taskId",row.id()); decisionBindings.put(cast.id(),row.id()); }
             agents.add(agent);
         }

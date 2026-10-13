@@ -28,6 +28,8 @@ public final class AgentView {
 	/** The family while the agent is on shift and the link is live (no off-shift/offline override); for effects. */
 	public String liveFamily = "idle";
 	public String activity = "";
+	/** The linked T3 conversation title, kept separate from transient activity text. */
+	public String threadTitle = "";
 	/** The station key the agent is at or walking to ("desk", "library", ..., "lounge"). */
 	public String station = "lounge";
 	public @Nullable String anchor;
@@ -42,6 +44,8 @@ public final class AgentView {
 	 * asked, a permission prompt), even when the Foreman shows the agent as idle meanwhile.
 	 */
 	public boolean awaitingUser;
+	/** A real T3 checkpoint is ready; distinct from an execution or approval. */
+	public boolean reviewReady;
 	/**
 	 * The decision behind {@link #awaitingUser} (for the agent card), or null. Every open decision
 	 * has exactly one owner agent ({@link AgentManager}): a merge belongs to the worker whose task it
@@ -53,6 +57,7 @@ public final class AgentView {
 	public int awaitingCount;
 	public String role = "";
 	public @Nullable String title;
+	public @Nullable String projectTitle;
 	/** Laid-out nameplates, rebuilt by {@link Nameplate#of} / {@link Nameplate#compactOf} only when their text changes. */
 	Nameplate.@Nullable Data plateCache;
 	Nameplate.@Nullable Data compactCache;
@@ -72,6 +77,7 @@ public final class AgentView {
 		awaitingUser = awaitingDecisionId != null;
 		role = a.role().wire();
 		title = a.title();
+		projectTitle = a.projectTitle();
 		activity = a.activity();
 		active = a.isActive();
 		paused = a.isPaused();
@@ -139,6 +145,7 @@ public final class AgentView {
 		if (needsYou()) {
 			w = 6;
 		}
+		if (reviewReady) w = Math.max(w, 4);
 		return paused ? Math.max(w, 3) : w;
 	}
 

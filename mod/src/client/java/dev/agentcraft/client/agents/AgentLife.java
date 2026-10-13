@@ -28,11 +28,13 @@ public final class AgentLife {
 	public static final int P_RAX = 0, P_RAY = 1, P_RAZ = 2, P_LAX = 3, P_LAY = 4, P_LAZ = 5;
 	public static final int P_RLX = 6, P_RLY = 7, P_RLZ = 8, P_LLX = 9, P_LLY = 10, P_LLZ = 11;
 	public static final int P_LEAN = 12, P_ARMW = 13, P_LEGW = 14, P_BOOK = 15;
-	public static final int N = 16;
+	public static final int P_RHAND = 16, P_LHAND = 17, P_HEADROLL = 18;
+	public static final int P_BODYROLL = 19;
+	public static final int N = 20;
 
 	/** What the body is doing (picked every tick). */
 	public enum Posture {
-		WALK, IDLE, SIT_IDLE, SIT_TYPE, SIT_THINK, SIT_SCRATCH, READ, TYPE_STAND, LEAN_BENCH, REVIEW, WAIT, THINK, SCRATCH, RELAX, STRETCH, TALK
+		WALK, IDLE, SIT_IDLE, SIT_TYPE, SIT_THINK, SIT_SCRATCH, READ, TYPE_STAND, LEAN_BENCH, REVIEW, WATCH, WAIT, THINK, SCRATCH, RELAX, STRETCH, TALK
 	}
 
 	/** Eye height of the agent model (player eye 1.62 x model scale 0.9375). */
@@ -57,6 +59,12 @@ public final class AgentLife {
 	private float sitPrev;
 	private float typeW;
 	private float typeWPrev;
+	private float mouseW, mouseWPrev;
+	private final float animationPhase, typingPace;
+	private boolean mousePause;
+	private int pleasedUntil;
+	private AgentExpression expression = AgentExpression.NONE;
+	private ResidentGestures.Gesture gesture = ResidentGestures.Gesture.NONE;
 	private float talkW;
 	private float talkWPrev;
 	private float exclaim;
@@ -85,6 +93,7 @@ public final class AgentLife {
 	private int pageFlipStart = -100;
 	/** "Oh, hi": a busy agent looks up at you for a moment when you come near, then back to work. */
 	private int greetUntil;
+	private int greetStart;
 	private int nextGreet;
 	private boolean playerWasNear;
 	// conversation
@@ -111,6 +120,8 @@ public final class AgentLife {
 			h = (h ^ c) * 0x100000001B3L;
 		}
 		rng = h == 0 ? 1 : h;
+		animationPhase = rand01() * Mth.TWO_PI;
+		typingPace = .86f + rand01() * .28f;
 		nextGlance = 40 + rand(80);
 		nextStretch = 200 + rand(600);
 		nextPageFlip = 60 + rand(120);
@@ -145,6 +156,10 @@ public final class AgentLife {
 	public Posture posture() {
 		return posture;
 	}
+	public AgentExpression expression() { return expression; }
+	public ResidentGestures.Gesture gesture() { return gesture; }
+	public float typingAmount() { return typeW; }
+	public float mouseAmount() { return mouseW; }
 
 	public Seats.@Nullable Seat seat() {
 		return seat;
@@ -236,6 +251,7 @@ public final class AgentLife {
 		System.arraycopy(cur, 0, prev, 0, N);
 		sitPrev = sit;
 		typeWPrev = typeW;
+		mouseWPrev = mouseW;
 		talkWPrev = talkW;
 		exclaimPrev = exclaim;
 
@@ -250,7 +266,7 @@ public final class AgentLife {
 		boolean alive = !v.stale;
 		String fam = v.family;
 		if (!java.util.Objects.equals(lastTaskId, v.taskId)) {
-			lastTaskId = v.taskId; lastFamily = ""; liveFor = 0; confettiPending = false;
+			lastTaskId = v.taskId; lastFamily = ""; liveFor = 0; confettiPending = false; pleasedUntil = 0;
 			bubble.clear();
 		}
 		if (alive && v.active) {
@@ -280,11 +296,14 @@ public final class AgentLife {
 		}
 		boolean typing = posture == Posture.SIT_TYPE || posture == Posture.TYPE_STAND;
 		if (typing && age >= typingPauseUntil && age >= typingUntil) {
-			typingUntil = age + 30 + rand(70);
-			typingPauseUntil = typingUntil + 10 + rand(30);
+			typingUntil = age + 35 + rand(55);
+			typingPauseUntil = typingUntil + 14 + rand(24);
+			mousePause = rand01() < .65f;
 		}
 		float typeTarget = typing && age < typingUntil ? 1f : 0f;
 		typeW = snap ? typeTarget : approach(typeW, typeTarget, 0.2f);
+		float mouseTarget = typing && mousePause && age >= typingUntil && age < typingPauseUntil ? 1f : 0f;
+		mouseW = snap ? mouseTarget : approach(mouseW, mouseTarget, .12f);
 		float talkTarget = posture == Posture.TALK ? 1f : 0f;
 		talkW = snap ? talkTarget : approach(talkW, talkTarget, 0.12f);
 		float exTarget = v.needsYou() ? 1f : 0f;
@@ -296,13 +315,18 @@ public final class AgentLife {
 
 		v.pose = walking ? AgentPose.WALK : sit > 0.5f ? AgentPose.SIT : cur[P_LEAN] > 0.12f ? AgentPose.LEAN : AgentPose.STAND;
 		look(mc, v, walking, snap);
+		boolean leisure = !v.stale && !v.paused && v.family.equals("done") && v.station.equals(AnchorNames.LOUNGE);
+		gesture = v.stale || v.paused ? ResidentGestures.Gesture.NONE
+			: ResidentGestures.select(posture, age, animationPhase, age < greetUntil && !v.needsYou(), leisure);
 		bubble.tick(age);
 		particlesTick(v, fam, alive, walking);
+		expression = AgentExpression.of(v, bubble.visible(), age < pleasedUntil);
 		particles.tick();
 		if (snap) {
 			System.arraycopy(cur, 0, prev, 0, N);
 			sitPrev = sit;
 			typeWPrev = typeW;
+			mouseWPrev = mouseW;
 			talkWPrev = talkW;
 			exclaimPrev = exclaim;
 		}
@@ -318,13 +342,21 @@ public final class AgentLife {
 		String fam = v.dotFamily();
 		boolean paused = v.paused || !v.active;
 		boolean talking = bubble.visible() && !seated;
+		if (!paused && v.needsYou()) return Posture.WAIT;
+		if (!paused && v.reviewReady) return Posture.REVIEW;
 		if (seated) {
 			if (paused) {
 				return Posture.SIT_IDLE;
 			}
 			return switch (fam) {
 				case "thinking" -> Posture.SIT_THINK;
-				case "working" -> seat != null && !Double.isNaN(seat.deskTop()) ? Posture.SIT_TYPE : Posture.SIT_IDLE;
+				case "working" -> switch (v.state) {
+					case READING -> Posture.READ;
+					case REVIEWING -> Posture.REVIEW;
+					case TESTING -> Posture.LEAN_BENCH;
+					case RUNNING -> Posture.WATCH;
+					default -> seat != null && !Double.isNaN(seat.deskTop()) ? Posture.SIT_TYPE : Posture.SIT_IDLE;
+				};
 				case "error" -> Posture.SIT_SCRATCH;
 				default -> Posture.SIT_IDLE;
 			};
@@ -347,6 +379,10 @@ public final class AgentLife {
 			case "thinking":
 				return Posture.THINK;
 			case "working":
+				if (v.state == AgentState.RUNNING) return Posture.WATCH;
+				if (v.state == AgentState.READING) return Posture.READ;
+				if (v.state == AgentState.REVIEWING) return Posture.REVIEW;
+				if (v.state == AgentState.TESTING) return Posture.LEAN_BENCH;
 				return switch (v.station) {
 					case AnchorNames.LIBRARY -> Posture.READ;
 					case AnchorNames.TERMINAL, "desk" -> Posture.TYPE_STAND;
@@ -422,6 +458,10 @@ public final class AgentLife {
 				arms(t, -0.74f, -0.32f, 0f, -0.5f, 0.3f, 0f);
 				t[P_LEAN] = 0.1f;
 			}
+			case WATCH -> {
+				arms(t, -0.6f, -0.65f, 0.15f, -0.6f, 0.65f, -0.15f);
+				t[P_LEAN] = 0.03f;
+			}
 			case WAIT -> arms(t, -0.42f, -0.46f, 0f, -0.42f, 0.46f, 0f);
 			case THINK -> arms(t, -2.1f, -0.6f, 0f, -0.5f, 0.62f, 0f);
 			case SCRATCH -> arms(t, -2.85f, -0.3f, 0f, 0.04f, 0f, -0.06f);
@@ -492,13 +532,15 @@ public final class AgentLife {
 			if (point == null && listenTo != null && age < listenUntil) {
 				point = lookPointFor(listenTo, playerEye, playerDist);
 			}
-			if (point == null && v.state == AgentState.WAITING_USER && playerEye != null && playerDist < 24 && v.active) {
+			if (point == null && v.needsYou() && playerEye != null && playerDist < 12 && v.active) {
 				point = playerEye;
 				faceBody = true;
 			}
-			boolean near = playerEye != null && playerDist < NEAR && inFront(eye, playerEye, body, 105);
+			boolean near = playerEye != null && player != null && !player.isSpectator()
+				&& playerDist < NEAR && inFront(eye, playerEye, body, 105);
 			boolean busy = isBusy(v);
-			if (near && !playerWasNear && busy && age >= nextGreet && player != null && !player.isSpectator()) {
+			if (near && !playerWasNear && age >= nextGreet && player != null && !player.isSpectator()) {
+				greetStart = age;
 				greetUntil = age + 40 + rand(20);
 				nextGreet = age + 300 + rand(200);
 			}
@@ -536,6 +578,12 @@ public final class AgentLife {
 			}
 		} else {
 			wantPitch += postureNod();
+		}
+		if (!walking && !v.stale && v.active && !v.paused) {
+			float time = age + animationPhase;
+			if (v.dotFamily().equals("thinking")) wantPitch += 3f * Mth.sin(time * .1f);
+			if (v.dotFamily().equals("error")) wantYaw += 7f * Mth.sin(time * .17f);
+			if (age < pleasedUntil) wantPitch += 5f * Mth.sin(time * .3f);
 		}
 		float rel = Mth.wrapDegrees(wantYaw - body);
 		boolean canTurnBody = !walking && sit < 0.05f && (faceBody || posture == Posture.IDLE || posture == Posture.TALK || posture == Posture.WAIT);
@@ -603,10 +651,14 @@ public final class AgentLife {
 
 	/** Where a busy agent looks: the monitor at its desk; the book / screen / bench below otherwise (via the nod). */
 	private @Nullable Vec3 stationFocus(AgentView v) {
+		if (posture == Posture.SIT_TYPE && typeW > .45f && Math.floorMod(age + (int)(animationPhase * 20), 80) < 22 && seat != null) {
+			double angle = Math.toRadians(e.yBodyRot);
+			return new Vec3(e.getX() - Math.sin(angle) * .55, seat.deskTop() + .03, e.getZ() + Math.cos(angle) * .55);
+		}
 		if (age < glanceUntil && (posture == Posture.SIT_TYPE || posture == Posture.SIT_IDLE)) {
 			return null; // a glance away from the screen
 		}
-		if (v.station.equals("desk") && (posture == Posture.SIT_TYPE || posture == Posture.SIT_IDLE || posture == Posture.TYPE_STAND)) {
+		if (v.station.equals("desk") && (posture == Posture.SIT_TYPE || posture == Posture.SIT_IDLE || posture == Posture.TYPE_STAND || posture == Posture.WATCH || posture == Posture.REVIEW)) {
 			Anchor mon = Anchors.get(AnchorNames.monitor(v.id));
 			if (mon != null && mon.pos().distanceToSqr(e.position()) < 9) {
 				return new Vec3(mon.x(), mon.y() - 0.12, mon.z());
@@ -668,6 +720,7 @@ public final class AgentLife {
 			if (on && age - lastConfetti > 60) {
 				particles.confetti(e, EYE - 0.15 + sitOffset(), this);
 				lastConfetti = age;
+				pleasedUntil = age + 55;
 			}
 		}
 		if (!on) {
@@ -676,13 +729,13 @@ public final class AgentLife {
 		switch (fam) {
 			case "thinking" -> {
 				if (age >= nextSpark) {
-					nextSpark = age + 9 + rand(9);
+					nextSpark = age + 24 + rand(24);
 					particles.sparkle(e, EYE + 0.15 + sitOffset(), this);
 				}
 			}
 			case "working" -> {
 				if (!walking && age >= nextMote) {
-					nextMote = age + 7 + rand(8);
+					nextMote = age + 20 + rand(20);
 					particles.mote(e, workPoint(), this);
 				}
 			}
@@ -727,12 +780,22 @@ public final class AgentLife {
 		}
 		float t = age + pt;
 		float tw = typeWPrev + (typeW - typeWPrev) * pt;
-		if (tw > 0.001f) {
-			// typing: quick alternating taps with a slow drift between keys
-			frame[P_RAX] += tw * (0.075f * Mth.sin(t * 1.9f) + 0.03f * Mth.sin(t * 0.37f));
-			frame[P_LAX] += tw * (0.075f * Mth.sin(t * 1.9f + 2.2f) + 0.03f * Mth.sin(t * 0.41f + 1f));
-			frame[P_RAY] += tw * 0.04f * Mth.sin(t * 0.23f);
-			frame[P_LAY] += tw * 0.04f * Mth.sin(t * 0.27f + 0.5f);
+		float mw = mouseWPrev + (mouseW - mouseWPrev) * pt;
+		DeveloperMotion.apply(frame, t * typingPace, animationPhase, tw, mw);
+		// Make active coding readable from across the floor: clear, out-of-phase key taps
+		// move the forearms as well as the keyboard keys.
+		if (posture == Posture.SIT_TYPE || posture == Posture.TYPE_STAND) {
+			float rightTap = DeveloperMotion.tap(t * typingPace, animationPhase, false);
+			float leftTap = DeveloperMotion.tap(t * typingPace, animationPhase, true);
+			frame[P_RAX] += tw * .12f * rightTap;
+			frame[P_LAX] += tw * .12f * leftTap;
+		}
+		ResidentGestures.apply(frame, gesture, t, animationPhase, Math.min(t - greetStart, greetUntil - t));
+		if (posture == Posture.WALK) frame[P_BODYROLL] += .02f * Mth.sin(t * .6f + animationPhase) * (float)(e.motion().speed() / AgentMotion.SPEED);
+		if (!e.view().stale && e.view().active && !e.view().paused && posture != Posture.WALK) {
+			if (expression == AgentExpression.THINKING) frame[P_HEADROLL] = .055f * Mth.sin(t * .07f + animationPhase);
+			if (expression == AgentExpression.FRUSTRATED) frame[P_HEADROLL] = .045f * Mth.sin(t * .11f + animationPhase);
+			if (expression == AgentExpression.PLEASED) { frame[P_RAX] -= .18f; frame[P_LAX] -= .18f; }
 		}
 		float kw = talkWPrev + (talkW - talkWPrev) * pt;
 		if (kw > 0.001f) {
@@ -749,6 +812,12 @@ public final class AgentLife {
 		float sitF = sitPrev + (sit - sitPrev) * pt;
 		s.sit = sitF;
 		s.sitDrop = (float) (drop * sitF);
+		s.expression = expression;
+		s.gesture = gesture;
+		s.typing = tw; s.mouse = mw;
+		s.keyRight = tw * DeveloperMotion.tap(t * typingPace, animationPhase, false);
+		s.keyLeft = tw * DeveloperMotion.tap(t * typingPace, animationPhase, true);
+		s.deskSurface = seat != null && sitF > .8f && (e.view().station.equals("desk") || e.view().station.equals("terminal")) && Double.isFinite(seat.deskTop()) ? (float)(seat.deskTop() - e.getY()) : Float.NaN;
 		s.plateBase = (float) Nameplate.HEIGHT + s.sitDrop;
 		s.book = frame[P_BOOK];
 		float flip = (age - pageFlipStart + pt) / 12f;

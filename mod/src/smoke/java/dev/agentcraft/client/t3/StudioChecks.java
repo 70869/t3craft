@@ -7,6 +7,12 @@ import java.util.*;
 /** Studio projections must preserve T3's identity, provenance and state for every chat. */
 public final class StudioChecks {
     public static void main(String[] args) {
+        dev.agentcraft.client.agents.ResidentAnimationChecks.main(args);
+        dev.agentcraft.client.agents.ResidentMovementChecks.main(args);
+        dev.agentcraft.layout.ResidentWorkFloorChecks.main(args);
+        UsageChecks.run();
+        checkActiveActivities();
+        checkWorkflow();
         var reached=new HashSet<Integer>();
         for(int p=0;p<50;p++) {
             var page=WallPagination.of(150,3,p);
@@ -37,6 +43,10 @@ public final class StudioChecks {
             check(task.get("id").getAsString().equals(rows.get(i).id()),"card routes to exact chat");
             check(task.get("ci").getAsString().equals("unknown"),"chat completion does not imply passing CI");
             check(task.get("branch").getAsString().equals("branch-"+i),"actual branch retained");
+            if (rows.get(i).status() == T3State.Status.NEEDS_YOU && online.contains(rows.get(i).id()))
+                check(task.get("status").getAsString().equals("review"),"pending user requests use a waiting card rather than an error card");
+            if (rows.get(i).status() == T3State.Status.ERROR)
+                check(task.get("status").getAsString().equals("blocked"),"actual failures retain the error card");
             if(i>=6) check(task.get("assignee").isJsonNull(),"unrepresented chat cannot mark another NPC waiting");
         }
         check(tasks.get(0).getAsJsonObject().get("blockedReason").getAsString().contains("offline"),"offline provenance retained");
@@ -61,4 +71,47 @@ public final class StudioChecks {
         System.out.println("PASS full history board/library/feed, six independent monitors, exact routing, offline provenance, no fabricated CI or tasks");
     }
     private static void check(boolean valid,String message) { if(!valid) throw new AssertionError(message); }
+    private static void checkWorkflow() {
+        var raw = new JsonObject(); raw.addProperty("updatedAt", "2026-10-07T12:00:00Z");
+        var working = new T3State.ThreadRow("run", "Run", "Project", "Machine", "owner", T3State.Status.WORKING, null, null, raw);
+        var done = new T3State.ThreadRow("done", "Done", "Project", "Machine", "owner", T3State.Status.DONE, null, null, raw);
+        var old = new JsonObject(); old.addProperty("updatedAt", "2026-10-06T12:00:00Z");
+        var waiting = new T3State.ThreadRow("waiting", "Waiting", "Project", "Machine", "owner", T3State.Status.NEEDS_YOU, null, null, old);
+        var failed = new T3State.ThreadRow("failed", "Failed", "Project", "Machine", "owner", T3State.Status.ERROR, null, null, raw);
+        check(T3Workflow.next(waiting, false, true, true) == T3Workflow.Action.CONNECT, "offline requests cannot invite answering");
+        check(T3Workflow.next(done, true, true, true) == T3Workflow.Action.ANSWER, "pending requests outrank checkpoints even on a settled chat");
+        check(T3Workflow.next(working, true, false, true) == T3Workflow.Action.CHAT, "old checkpoint cannot replace the current run action");
+        check(T3Workflow.next(done, true, false, true) == T3Workflow.Action.REVIEW, "ready checkpoint offers review");
+        check(T3Workflow.next(failed, true, false, true) == T3Workflow.Action.CHAT, "an older checkpoint cannot hide a current failure");
+        check(List.of(done, working, waiting).stream().sorted(T3Workflow.order(T3Workflow.View.ALL)).toList().equals(List.of(waiting, working, done)), "waiting work stays first regardless of recency");
+        check(List.of(waiting, done).stream().sorted(T3Workflow.order(T3Workflow.View.RECENT)).findFirst().orElseThrow() == done, "recent view follows server timestamps");
+        check(T3Workflow.matches(T3Workflow.View.DESKS, done, true) && !T3Workflow.matches(T3Workflow.View.DESKS, done, false), "desk filter uses actual bindings");
+        check(!T3Workflow.matches(T3Workflow.View.ACTIVE, done, true) && T3Workflow.matches(T3Workflow.View.WAITING, waiting, false), "status filters include conversations beyond desks");
+        System.out.println("PASS workflow request/review/offline priorities, recent order and desk/status filtering");
+    }
+    private static void checkActiveActivities() {
+        var raw = new JsonObject(); raw.addProperty("activeRunId", "current-run");
+        var row = new T3State.ThreadRow("chat", "Chat", "Project", "Machine", "owner", T3State.Status.WORKING, null, null, raw);
+        var detail = new JsonObject(); var items = new JsonArray(); detail.add("turnItems", items);
+        var item = new JsonObject(); item.addProperty("runId", "old-run"); item.addProperty("type", "command_execution"); item.addProperty("status", "running"); item.addProperty("input", "npm test"); items.add(item);
+        check(StudioProjection.workActivity(row, detail) == StudioProjection.WorkActivity.WORKING, "historical run receipts cannot animate a current test");
+        item.addProperty("runId", "current-run");
+        check(StudioProjection.workActivity(row, detail) == StudioProjection.WorkActivity.TESTING, "active test command animates testing");
+        item.addProperty("status", "completed");
+        check(StudioProjection.workActivity(row, detail) == StudioProjection.WorkActivity.WORKING, "completed receipt cannot keep an NPC testing");
+        item.addProperty("status", "running"); item.addProperty("input", "git diff --stat");
+        check(StudioProjection.workActivity(row, detail) == StudioProjection.WorkActivity.REVIEWING, "active diff command animates review");
+        item.addProperty("type", "file_change");
+        check(StudioProjection.workActivity(row, detail) == StudioProjection.WorkActivity.EDITING, "active file change animates editing");
+        item.addProperty("type", "file_search");
+        check(StudioProjection.workActivity(row, detail) == StudioProjection.WorkActivity.READING, "active search animates reading");
+        item.addProperty("type", "future_tool");
+        check(StudioProjection.workActivity(row, detail) == StudioProjection.WorkActivity.WORKING, "unknown tools retain generic work instead of fabricated activity");
+        var child = new JsonObject(); child.addProperty("title", "Child task"); child.addProperty("status", "running"); child.addProperty("progress", "Reading sources");
+        var children = new JsonArray(); children.add(child); detail.add("subagents", children);
+        check(StudioProjection.delegationSummary(row, detail).contains("Child task · running · Reading sources"), "NPC task context retains actual child progress");
+        var projection = new JsonObject(); projection.add("thread", raw); projection.add("subagents", children);
+        check(T3Protocol.projection(projection).getAsJsonArray("subagents").size() == 1, "normalized desk projection retains delegated tasks");
+        System.out.println("PASS NPC active-run activity, stale receipt rejection, unknown tools and delegated task context");
+    }
 }

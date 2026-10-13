@@ -32,7 +32,7 @@ import org.jspecify.annotations.Nullable;
  *       contract: bottom stairs / bottom slab / a 0.3-0.7 high block at the anchor) is checked via
  *       the free neighbour an agent steps in from (its right-hand side first, then the left,
  *       behind, in front), which must be plain floor, never the top of furniture;</li>
- *   <li>routes that climb onto furniture (a route point more than 0.3 above the floor);</li>
+ *   <li>routes that climb onto furniture (a route point more than 0.3 above both endpoint floors);</li>
  *   <li>spots standing on furniture that is not a seat, shared slots closer than 1.6;</li>
  *   <li>light: block light at feet height over every walkable interior cell (min / mean, and the
  *       cells darker than {@code minLight}, default 7).</li>
@@ -55,7 +55,7 @@ final class HqCheck {
 	}
 
 	static boolean isSpot(String name) {
-		return !name.startsWith(AnchorNames.CAM_PREFIX) && !name.startsWith(AnchorNames.MONITOR_PREFIX) && !name.startsWith("seat_")
+		return !name.startsWith("campus_") && !name.startsWith(AnchorNames.CAM_PREFIX) && !name.startsWith(AnchorNames.MONITOR_PREFIX) && !name.startsWith("seat_")
 			&& !NOT_SPOTS.contains(name) && !name.equals(AnchorNames.SPAWN);
 	}
 
@@ -155,7 +155,9 @@ final class HqCheck {
 					continue;
 				}
 				double len = 0;
-				double floorY = Math.min(start.y, goal.y);
+				// Cross-floor routes legitimately pass above the lower endpoint.
+                // Flag overshoot above both destination floors; layout checks validate stair geometry.
+				double floorY = Math.max(start.y, goal.y);
 				for (int i = 0; i < route.size(); i++) {
 					if (i > 0) {
 						len += route.get(i).distanceTo(route.get(i - 1));
@@ -197,7 +199,7 @@ final class HqCheck {
 				for (int j = i + 1; j < slots.size(); j++) {
 					Anchor p = slots.get(i);
 					Anchor q = slots.get(j);
-					double d = Math.hypot(p.x() - q.x(), p.z() - q.z());
+					double d = p.pos().distanceTo(q.pos());
 					if (d < 1.6) {
 						crowded.add(String.format(Locale.ROOT, "%s-%s %.2f", p.name(), q.name(), d));
 					}
@@ -211,6 +213,14 @@ final class HqCheck {
 		o.addProperty("routesChecked", spots);
 		o.addProperty("longestRoute", Math.round(longest * 10) / 10.0);
 		o.add("unreachable", failures);
+		// Visitor destinations extend beyond the NPC work floor. Check them with an outdoor grid.
+		JsonArray campusFailures = new JsonArray(); int campusRoutes = 0;
+		Anchor entrance = layout.get(AnchorNames.ENTRANCE);
+		if (entrance != null) for (Anchor destination : layout.anchors().values()) if (destination.name().startsWith("campus_")) {
+			campusRoutes++;
+			if (new GridPathfinder(level, null).find(entrance.pos(), destination.pos()) == null) campusFailures.add(destination.name());
+		}
+		o.addProperty("campusRoutesChecked", campusRoutes); o.add("campusUnreachable", campusFailures);
 		o.addProperty("pathMs", (System.nanoTime() - t0) / 1_000_000);
 		// light at feet height over the walkable interior
 		Anchors.Bounds b = layout.bounds();

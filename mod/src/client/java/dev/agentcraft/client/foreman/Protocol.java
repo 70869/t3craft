@@ -27,13 +27,13 @@ public final class Protocol {
 	// ------------------------------------------------------------------ enums
 
 	public enum AgentState implements Wire {
-		IDLE, THINKING, READING, EDITING, RUNNING, TESTING, WAITING_USER, BLOCKED, DONE, ERROR, UNKNOWN;
+		IDLE, THINKING, READING, EDITING, RUNNING, TESTING, REVIEWING, WAITING_USER, BLOCKED, DONE, ERROR, UNKNOWN;
 
 		/** Status-dot / lamp family: idle, thinking, working, waiting, error, done. */
 		public String family() {
 			return switch (this) {
 				case THINKING -> "thinking";
-				case READING, EDITING, RUNNING, TESTING -> "working";
+				case READING, EDITING, RUNNING, TESTING, REVIEWING -> "working";
 				case WAITING_USER -> "waiting";
 				case BLOCKED, ERROR -> "error";
 				case DONE -> "done";
@@ -114,7 +114,7 @@ public final class Protocol {
 
 	public record Agent(String id, String name, AgentRole role, @Nullable String title, String color, @Nullable String accent, String skin,
 		AgentState state, String activity, Station station, @Nullable String taskId, @Nullable String repoId, @Nullable String worktree,
-		@Nullable Boolean paused, @Nullable Boolean active) {
+		@Nullable Boolean paused, @Nullable Boolean active, @Nullable String projectTitle) {
 		public Agent {
 			name = name == null ? id : name;
 			role = role == null ? AgentRole.UNKNOWN : role;

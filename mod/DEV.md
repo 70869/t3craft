@@ -2,6 +2,10 @@
 
 The runtime now connects directly to paired T3 environments. Set `T3CRAFT_CONFIG` to a private development configuration if you do not want to use Minecraft's default `config/t3craft.json`. See [developer checks](../tools/README.md) and [integration coverage](../docs/T3-INTEGRATION.md).
 
+`runClient` resolves the `T3Craft-<minecraft_version>-Native` instance in the standard Prism directories on Windows, macOS and Linux (including Flatpak), honors the launcher's `InstanceDir`, and accepts either `minecraft` or `.minecraft`. It opens that instance's existing saves and settings. Override with `-Pt3craftGameDir=<path>` / `T3CRAFT_GAME_DIR`, or choose a custom launcher directory with `-Pt3craftPrismData=<path>` / `T3CRAFT_PRISM_DATA`. Without an installed instance it falls back to `mod/run`. Run `gradlew gameDirectory` to inspect the selection. The regular `build` task does not launch Minecraft or open a world.
+
+Fixture QA must explicitly select an isolated game directory, for example `-Pt3craftGameDir=../.local/fixture-game`. Changing `T3CRAFT_CONFIG` alone isolates credentials but does not isolate the world.
+
 The original HQ presentation types and optional mock-scene inspection commands below retain AgentCraft names. There is no active Foreman connection or external backend.
 
 Fabric mod `agentcraft` (package `dev.agentcraft`). Common entrypoint `dev.agentcraft.AgentCraft`,
@@ -56,17 +60,20 @@ GRADLE_USER_HOME=C:/Projects/agentcraft/.gradle-home ./gradlew --stop       # st
 (PowerShell: `$env:GRADLE_USER_HOME='C:\Projects\agentcraft\.gradle-home'; .\gradlew.bat runClient`.)
 
 `runClient` starts with **no clicks**:
-1. `prepareRunDir` copies `run-template/options.txt` to `mod/run/options.txt`, but only if that file
+1. For the default isolated `mod/run` directory, `prepareRunDir` copies `run-template/options.txt`, but only if that file
    does not exist yet. The template sets: master and music volume 0, `pauseOnLostFocus:false`,
    `guiScale:3` (1080p), render distance 16, chunk fade-in off (so screenshots are never half-faded),
    no tutorial, accessibility onboarding or narrator, no Realms notifications, and the
-   inactivity FPS limit set to "minimized" only. Delete `mod/run/options.txt` to reset it.
+   inactivity FPS limit set to "minimized" only. Installed Prism directories retain their existing options.
 2. Program args: `--username <you> --width 1920 --height 1080`, where `<you>` is `AGENTCRAFT_PLAYER`
    or else your OS user name (letters, digits and `_`, at most 16 characters).
 3. **AutoWorld** (client) runs the first time the title screen appears. It loads the world folder
    `AgentCraft HQ` if it exists, and otherwise creates it: creative, peaceful, commands allowed, no
-   structures, no bonus chest, superflat plains meadow (bedrock / 124 stone / 3 dirt / grass), so
-   **the grass top is y=64 and you stand at y=65**. World spawn is 0 65 0.
+   structures, no bonus chest, flat ocean (bedrock / 111 stone / gravel / 15 water). The HQ builder
+   raises an island campus with **grass at y=64 and sea water at y=63**. Existing HQ worlds retain
+   their recorded campus plan while surrounding chunks gain coastal terrain and ocean as they load.
+   Modern grounds share a continuous height field with the exterior: wooded ridges, coves, rocky
+   headlands, beaches and gravel trails. The ocean floor descends to y=48 outside the coastal shelf.
 4. **HqWorld** (server side, HQ world only) re-applies the game rules on every start: no time or
    weather cycle, keep inventory, no fire spread, no mob spawning of any kind, no mob griefing, no vine
    spread, no snow build-up, respawn radius 0, no locator bar, quiet advancement and command output,
@@ -166,7 +173,7 @@ treated the same, other binary frames get an `ok:false` reply).
 | `dev.agents.fx` | `agent`, `fx` = `confetti`/`puff`/`sparkle`/`say`, `text?`, `to?` | Plays an agent effect now (QA preview; `say` shows a local speech bubble, nothing is sent) |
 | `dev.agents.keys` | `keys` (comma-separated: key names `space return escape back tab left right`, or text typed letter by letter, a-z 0-9 space) | **Test only** (`AGENTCRAFT_DEV_TEST=1`): presses keys as SDL reports a keyboard (SDL events queued for the game window, one key every 3 frames, through Minecraft's SDL event loop; printable keys produce text events only while SDL text input is on). Returns `{pressed, textEvents, screen, input?, textInputActive}`. `tools/agents-typing.mjs` uses it to check the agent card's message line |
 | `dev.test.foremanMessage` | `message:{type, ...}` | **Test only** (`AGENTCRAFT_DEV_TEST=1`): applies a Foreman message to the state model as if received (e.g. `foreman.status` with `auth:"failed"` to see the auth banner) |
-| `dev.displays` | `look?` = `paper` / `dark` / `split`, `reset?` | Monitor look (default dark; split alternates per monitor for comparisons), every laid-out monitor screen `{pos, agent, mode, style, size, ppb, rows, ageMs}`, and `stats` = display CPU cost per frame since the last reset (`monitor`/`board`: `usPerFrame`, `callsPerFrame`, `rebuilds`) |
+| `dev.displays` | `look?` = `theme` / `paper` / `dark` / `split`, `reset?` | Monitor look (default theme; split alternates per monitor for comparisons), every laid-out monitor screen `{pos, agent, mode, style, size, ppb, rows, ageMs}`, and `stats` = display CPU cost per frame since the last reset (`monitor`/`board`: `usPerFrame`, `callsPerFrame`, `rebuilds`) |
 | `dev.taskwall` | `open?` (task id), `press?` (button id), `aim?` (task id), `board?` ("x y z" origin for `aim`), `lightFloor?` (0-15), `ppb?` (0-256, 0 = auto), `relayout?` | Task Wall boards and their cards (column counts, widths and cards per row, hidden ids, card positions, size full/brief/compact, title lines, state dot, glowing, `layoutUs` of the last re-plan). `lightFloor`/`ppb` override the block-light floor and the pixel density for A/B shots, `relayout` forces a re-plan. `open` opens that task's screen, `press` presses a button in the open task screen (`prev next retry prioritize reassign cancel to:<agent>`), `aim` returns the world point of a card and an eye 2.5 blocks in front (then `dev.camera` + `dev.key {mapping:"key.use"}` clicks it the real way; use `mode:"creative"`, spectators cannot click) |
 
 Registered screens (`dev.screen {open}`): `creative_agentcraft` (creative inventory on the AgentCraft tab), `agent` (agent card: last clicked agent, else whoever needs you), `task` (task detail: the last task opened, else the first doing one). Phase 3 features add theirs (see mod/FEATURES.md).
@@ -316,8 +323,11 @@ negative entity id, `noSave`/`noSummon` type; a server-side instance discards it
 agent in `mc.level`. Targets come from `StationAssigner` (desk -> `desk_<id>`, shared stations ->
 sticky slots, off shift -> lounge). New agents appear on their spot. Station changes walk at
 2.9 blocks/s (the vanilla walk cycle is driven by the real distance moved), turning at most
-24 deg/tick and turning in place before walking backwards. No route (or more than 96 blocks)
-teleports. Rendering: `EntityRenderDispatcherMixin` routes agents to `AgentRenderer` (an
+24 deg/tick and turning in place before walking backwards. Routes are bounded at 192 blocks to
+cover the expanded campus. A blocked route holds on safe ground and retries after two seconds;
+an immediate collision guard stops motion when the player edits its next step. Nearby chairs
+are rechecked every ten ticks, including rotation and overhead obstructions. Rendering:
+`EntityRenderDispatcherMixin` routes agents to `AgentRenderer` (an
 `AvatarRenderer`, slim or wide by skin), because vanilla sends every `AvatarRenderState` to the
 player renderer at submit time. Clicks on agents are consumed client-side (never sent to the server,
 which does not know them).
@@ -340,7 +350,8 @@ interleaved their text and a nearer plate let farther text ghost through. Fixed 
   a plate across another one, and a lifted plate draws a hairline in the agent's colour down to its
   head. The plate under the crosshair always shows in full (hover a compact plate to read it).
   Plates behind walls take no space (line-of-sight test per tick; a camera inside a wall block is
-  handled), plates nearer than 1.3 blocks are hidden, a crowd taller than 8 plates hides its
+  handled), plates inside 0.15 blocks are hidden to avoid clipping, close plates keep a capped
+  readable size, and a crowd taller than 8 plates hides its
   low-value plates.
 - **Mid-distance legibility**: plates keep their world size up to 12 blocks, then grow with
   distance up to 1.6x (constant screen size), so desk plates read from `cam_room`.

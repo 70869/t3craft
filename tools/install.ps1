@@ -24,7 +24,7 @@ if (-not $taskJdk) {
     $package = $assets[0].binary.package
     New-Item -ItemType Directory -Force $javaDir | Out-Null
     $archive = Join-Path $javaDir $package.name
-    Invoke-WebRequest -Uri $package.link -OutFile $archive
+    Invoke-WebRequest -UseBasicParsing -Uri $package.link -OutFile $archive
     if ((Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne $package.checksum.ToLowerInvariant()) { throw 'Java download checksum mismatch.' }
     Expand-Archive -LiteralPath $archive -DestinationPath $javaDir -Force
     Remove-Item -LiteralPath $archive
@@ -51,6 +51,8 @@ $instanceDir = 'instances'
 $prismConfig = Join-Path $PrismData 'prismlauncher.cfg'
 if (Test-Path -LiteralPath $prismConfig) { $line = Get-Content -LiteralPath $prismConfig | Where-Object { $_ -match '^InstanceDir=' } | Select-Object -First 1; if ($line) { $instanceDir = $line.Substring(12) } }
 $config = Join-Path (Join-Path (Join-Path $PrismData $instanceDir) $InstanceId) 'minecraft\config\t3craft.json'
+$dotGame = Join-Path (Join-Path (Join-Path $PrismData $instanceDir) $InstanceId) '.minecraft'
+if (Test-Path -LiteralPath $dotGame) { $config = Join-Path $dotGame 'config\t3craft.json' }
 if (-not $SkipPair -and -not (Test-Path -LiteralPath $config)) {
     try { & (Join-Path $PSScriptRoot 'pair-t3.ps1') -ConfigPath $config }
     catch { Write-Warning 'Automatic local pairing could not finish. Press ` in Minecraft and paste a fresh link from T3 Settings > Connections.' }

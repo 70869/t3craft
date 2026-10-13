@@ -1,4 +1,9 @@
 {
+  "key.category.agentcraft.agentcraft": "T3Craft",
+  "key.agentcraft.console": "Open T3 chats",
+  "key.agentcraft.console_terminal": "T3 chats (looking at a terminal)",
+  "key.agentcraft.decisions": "Answer decisions",
+  "key.agentcraft.campus": "Open HQ directory",
   "block.agentcraft.monitor": "T3 Chat Monitor",
   "block.agentcraft.task_board": "T3 Task Board",
   "block.agentcraft.decision_podium": "T3 Decision Podium",
@@ -31,9 +36,5 @@
   "item.agentcraft.oak_parquet": "Oak Parquet",
   "item.agentcraft.glow_panel": "Glow Panel",
   "item.agentcraft.glow_strip": "Glow Strip",
-  "itemGroup.agentcraft": "T3Craft Studio",
-  "key.category.agentcraft.agentcraft": "T3Craft",
-  "key.agentcraft.console": "Open T3 chats",
-  "key.agentcraft.console_terminal": "T3 chats (looking at a terminal)",
-  "key.agentcraft.decisions": "Answer decisions"
+  "itemGroup.agentcraft": "T3Craft Studio"
 }

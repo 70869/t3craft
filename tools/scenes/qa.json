@@ -1,88 +1,16 @@
 {
-  "description": "AgentCraft QA camera set (docs/visual-bar.md, 'QA camera set'). Run with node tools/qa.mjs (showcase busy state). Cameras come from the mod's dev.anchors (cam_* names, contract in docs/QA.md); 'camera' is only a fallback for shots whose subject does not depend on the HQ layout. A shot with neither is skipped with a reason.",
-  "foreman": { "connect": true },
-  "defaults": { "time": 12000, "weather": "clear", "hideHud": true, "mode": "spectator", "fov": 70 },
-  "waitFor": [
-    { "path": "foreman.connected", "equals": true, "timeoutMs": 30000, "unreportedMs": 5000 }
-  ],
-  "anchors": {},
+  "description": "Current T3Craft modern-campus visual review. Run tools/t3-visual-qa.mjs against an isolated protocol-2 fixture game; no real conversations are written.",
+  "defaults": { "time": 12000, "weather": "clear", "hideHud": true, "mode": "spectator", "fov": 70, "waitMs": 1200, "dev": [{ "type": "dev.screen", "open": null }] },
   "shots": [
-    {
-      "name": "qa01_exterior_hero",
-      "title": "Exterior hero: golden hour, 3/4 view of the HQ",
-      "anchor": "cam_exterior_hero",
-      "camera": { "x": -40, "y": 86, "z": -40, "lookAt": { "x": 0, "y": 70, "z": 0 } },
-      "time": 12400,
-      "waitMs": 1500
-    },
-    {
-      "name": "qa02_entrance_atrium",
-      "title": "Entrance looking into the Goal Atrium (holographic goal + progress ring)",
-      "anchor": "cam_entrance_atrium",
-      "time": 12000,
-      "waitMs": 1500
-    },
-    {
-      "name": "qa03_task_wall",
-      "title": "Task Wall straight-on, ~10 cards across columns",
-      "anchor": "cam_task_wall",
-      "waitFor": { "foreman": "tasks.t1.id", "exists": true, "timeoutMs": 5000 },
-      "waitMs": 1000
-    },
-    {
-      "name": "qa04_agent_desk",
-      "title": "Agent desk close-up: agent at desk, monitor streaming a legible log",
-      "anchor": ["cam_agent_desk", "cam_desk_juniper", "cam_desk_tove"],
-      "waitMs": 2500
-    },
-    {
-      "name": "qa05_wide_interior",
-      "title": "Wide interior: 3+ agents working at different stations",
-      "anchor": "cam_wide_interior",
-      "waitMs": 2500
-    },
-    {
-      "name": "qa06_decision_podium",
-      "title": "Decision Podium with an open decision, agent waiting near the user",
-      "anchor": "cam_decision_podium",
-      "waitFor": { "foreman": "decision.id", "exists": true, "timeoutMs": 5000 },
-      "waitMs": 2000
-    },
-    {
-      "name": "qa07_console",
-      "title": "Console screen open: command input with @agent autocomplete",
-      "anchor": ["cam_console", "cam_wide_interior", "cam_entrance_atrium"],
-      "camera": { "x": -40, "y": 86, "z": -40, "lookAt": { "x": 0, "y": 70, "z": 0 } },
-      "screen": "console",
-      "type": "@ju",
-      "waitFrames": 10
-    },
-    {
-      "name": "qa08_diff_review",
-      "title": "Diff review screen open with a real multi-file diff (the open merge decision)",
-      "anchor": ["cam_merge_station", "cam_wide_interior"],
-      "camera": { "x": -40, "y": 86, "z": -40, "lookAt": { "x": 0, "y": 70, "z": 0 } },
-      "foreman": [
-        { "type": "diff.request", "repoId": "{{merge.repoId}}", "worktree": "{{merge.worktree}}", "minFiles": 2 }
-      ],
-      "screen": { "open": "diff", "decisionId": "{{merge.id}}", "repoId": "{{merge.repoId}}", "worktree": "{{merge.worktree}}" },
-      "waitMs": 1500
-    },
-    {
-      "name": "qa09_library",
-      "title": "Library / memory screen open",
-      "anchor": ["cam_library", "cam_wide_interior"],
-      "camera": { "x": -40, "y": 86, "z": -40, "lookAt": { "x": 0, "y": 70, "z": 0 } },
-      "screen": { "open": "library" },
-      "waitMs": 1000
-    },
-    {
-      "name": "qa10_night",
-      "title": "Night shot: lit interior through the windows",
-      "anchor": ["cam_night", "cam_exterior_hero"],
-      "camera": { "x": -40, "y": 86, "z": -40, "lookAt": { "x": 0, "y": 70, "z": 0 } },
-      "time": 18000,
-      "waitMs": 2500
-    }
+    { "name": "qa01_exterior_hero", "title": "Modern campus at golden hour", "anchor": "cam_exterior_hero", "time": 12400 },
+    { "name": "qa02_entrance_atrium", "title": "Entrance and native workspace overview", "anchor": "cam_entrance_atrium" },
+    { "name": "qa03_task_wall", "title": "Physical chat wall with native states and project context", "anchor": "cam_task_wall", "offset": { "dx": 4 }, "fov": 70 },
+    { "name": "qa04_agent_desk", "title": "Resident at an assigned desk with its own conversation monitor", "anchor": "cam_desk_kit", "fov": 55 },
+    { "name": "qa05_wide_interior", "title": "Residents working across the main floor", "anchor": "cam_wide_interior" },
+    { "name": "qa06_decision_podium", "title": "Physical Decisions station with a pending native request", "anchor": "cam_decision_podium", "fov": 60 },
+    { "name": "qa07_chat", "title": "Native conversation and composer", "anchor": "cam_console", "screen": "t3", "hideHud": false },
+    { "name": "qa08_diff_review", "title": "Native checkpoint with multiple changed files and a selected patch", "anchor": "cam_merge_station", "hideHud": false, "dev": [{ "type": "dev.agents.card", "agent": "kit" }, { "type": "dev.t3.menu", "click": "Workspace" }, { "type": "dev.t3.menu", "click": "Review changes" }, { "type": "dev.wait", "ms": 1000 }, { "type": "dev.t3.review", "selectFile": "src/greeting.ts" }] },
+    { "name": "qa09_library", "title": "Native saved conversation library", "anchor": "cam_library", "screen": "t3-library", "hideHud": false },
+    { "name": "qa10_night", "title": "Night lighting through the campus windows", "anchor": "cam_night", "time": 18000 }
   ]
 }

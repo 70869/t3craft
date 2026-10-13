@@ -131,6 +131,8 @@ public final class T3State {
 	private final Map<String, JsonObject> studioDetails = new ConcurrentHashMap<>();
 	private final Map<String, Long> studioFetchedAt = new HashMap<>();
 	public Map<String, JsonObject> studioDetails() { return Map.copyOf(studioDetails); }
+	/** Read a single immutable fetched projection without copying the whole desk map. */
+	public JsonObject studioDetail(String id) { return studioDetails.get(id); }
 	public void observeStudio(Set<String> ids) { studioObserved = Set.copyOf(ids); }
 	private void rememberStudio(String id, JsonObject raw) { studioDetails.put(id, raw); studioFetchedAt.put(id, System.currentTimeMillis()); }
 	private void refreshStudio() {
@@ -139,7 +141,12 @@ public final class T3State {
 			if (!online(id)) continue;
 			var row = snapshot.threads().stream().filter(r -> r.id().equals(id)).findFirst().orElse(null);
 			long period = row != null && (row.status() == Status.WORKING || row.status() == Status.NEEDS_YOU) ? 4000 : 30000;
-			if (System.currentTimeMillis() - studioFetchedAt.getOrDefault(id, 0L) < period) continue;
+			var previous = studioDetails.get(id);
+			String currentStamp = row == null ? null : T3Protocol.string(row.raw(), "updatedAt");
+			String previousStamp = previous == null ? null : T3Protocol.string(previous, "updatedAt");
+			boolean changed = currentStamp != null && previousStamp != null && !currentStamp.equals(previousStamp);
+			// A new T3 receipt/checkpoint must update the resident promptly; unchanged desks keep the bounded polling interval.
+			if (!changed && System.currentTimeMillis() - studioFetchedAt.getOrDefault(id, 0L) < period) continue;
 			try { var api = apiFor(id); if (api != null) rememberStudio(id, api.thread(id, 4)); }
 			catch (Exception e) { studioFetchedAt.put(id,System.currentTimeMillis()); T3Log.LOGGER.debug("Could not refresh a studio monitor", e); }
 			return; // Bound background reads to one desk per maintenance tick.
@@ -157,13 +164,15 @@ public final class T3State {
 		return snapshot;
 	}
 
-	/** API of the environment that owns the focused thread (or the first one). */
+	/** Composer API; a missing focus may still launch a new chat on the first paired machine. */
 	public T3Api api() {
 		Env env = envFor(focusedThreadId);
-		return env == null ? null : env.api;
+		return env == null ? (envs.isEmpty() ? null : envs.getFirst().api) : env.api;
 	}
+	public T3Api apiForOwner(String owner) { for (Env env : envs) if (env.api.ownerKey().equals(owner)) return env.api; return null; }
+	public boolean onlineOwner(String owner) { return machines.stream().anyMatch(m -> m.owner().equals(owner) && m.online()); }
 
-	/** API of the environment that owns {@code threadId}; falls back to the first environment. */
+	/** API of the unique environment that owns {@code threadId}; unknown or copied IDs cannot route. */
 	public T3Api apiFor(String threadId) {
 		Env env = envFor(threadId);
 		return env == null ? null : env.api;
@@ -349,6 +358,11 @@ public final class T3State {
 	}
 
 	public void respond(String threadId, String requestId, String decision, JsonObject answers, Consumer<Exception> onError) {
+		respond(threadId, requestId, decision, answers, onError, () -> {});
+	}
+
+	/** Reports success only after the owning T3 machine acknowledges the exact request. */
+	public void respond(String threadId, String requestId, String decision, JsonObject answers, Consumer<Exception> onError, Runnable onSuccess) {
 		Env owner = envFor(threadId);
 		run(() -> {
 			if (owner == null || envFor(threadId) != owner || owner.error != null)
@@ -362,6 +376,7 @@ public final class T3State {
 			if (answers == null) owner.api.respondToApproval(threadId, requestId, decision);
 			else owner.api.answerQuestions(threadId, requestId, answers);
 			fetchWaitingDetail(threadId);
+			onSuccess.run();
 		}, onError);
 	}
 

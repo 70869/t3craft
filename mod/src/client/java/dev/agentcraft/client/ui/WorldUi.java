@@ -6,6 +6,7 @@ import com.mojang.renderpearl.api.GpuFormat;
 import com.mojang.renderpearl.api.pipeline.ColorTargetState;
 import com.mojang.renderpearl.api.pipeline.RenderPipeline;
 import dev.agentcraft.AgentCraft;
+import dev.agentcraft.client.ui.ShaderRenderCompatibility;
 import java.util.Optional;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -92,6 +93,7 @@ public final class WorldUi {
 
 	/** The GUI atlas drawn opaque in the solid pass ({@link Layer#SOLID}). */
 	public static RenderType guiAtlasSolid() {
+		if (ShaderRenderCompatibility.useVanillaWorldPipelines()) return guiAtlas();
 		if (guiAtlasSolidType == null) {
 			solidPipeline = RenderPipeline.builder(RenderPipelines.WORLD_TEXT_SNIPPET)
 				.withLocation(AgentCraft.id("pipeline/world_ui_solid"))
@@ -193,6 +195,14 @@ public final class WorldUi {
 	public static void submitText(PoseStack poseStack, SubmitNodeCollector collector, FormattedCharSequence text, float x, float y, int argb,
 		int light) {
 		collector.order(1).submitText(poseStack, x, y, text, false, Font.DisplayMode.POLYGON_OFFSET, light, argb, 0, 0);
+	}
+
+	/** Block-face text uses the caller's explicit depth layers, avoiding shader polygon offsets. */
+	public static void submitFaceText(PoseStack ps, SubmitNodeCollector c, String text, float x, float y, int argb, int light) {
+		submitFaceText(ps, c, Component.literal(text).getVisualOrderText(), x, y, argb, light);
+	}
+	public static void submitFaceText(PoseStack ps, SubmitNodeCollector c, FormattedCharSequence text, float x, float y, int argb, int light) {
+		c.order(1).submitText(ps, x, y, text, false, Font.DisplayMode.NORMAL, light, argb, 0, 0);
 	}
 
 	/**

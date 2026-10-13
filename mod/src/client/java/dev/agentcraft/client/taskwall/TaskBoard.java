@@ -190,6 +190,7 @@ final class TaskBoard {
 		boolean flying;
 		final DisplayDraw.Rects glow = new DisplayDraw.Rects();
 		final DisplayDraw.Rects shadow = new DisplayDraw.Rects();
+		final DisplayDraw.Rects body = new DisplayDraw.Rects();
 
 		Card(String id, Task task) {
 			this.id = id;
@@ -351,6 +352,7 @@ final class TaskBoard {
 	boolean everLaidOut;
 	boolean pageChanged;
 	final DisplayDraw.Rects lanes = new DisplayDraw.Rects();
+	final DisplayDraw.Rects canvas = new DisplayDraw.Rects();
 	final DisplayDraw.Rects shadows = new DisplayDraw.Rects();
 	final DisplayDraw.Rects veil = new DisplayDraw.Rects();
 	final DisplayDraw.Rects badge = new DisplayDraw.Rects();
@@ -404,13 +406,16 @@ final class TaskBoard {
 	 * Re-lay out when the tasks or the size changed, refresh card contents when only agents changed.
 	 * Returns true when anything was rebuilt.
 	 */
+	private long themeRevision = -1;
 	boolean sync(@Nullable ForemanState s, int panelW, int panelH, long taskSeq, long agentSeq, long now) {
+		boolean themeChanged = themeRevision != dev.agentcraft.client.ui.T3Theme.revision();
 		int ppb = density(panelW, panelH);
 		boolean resized = ppb != this.ppb || panelW != this.panelW || panelH != this.panelH;
-		if (!pageChanged && !resized && taskSeq == this.taskSeq && agentSeq == this.agentSeq && everLaidOut) {
+		if (!themeChanged && !pageChanged && !resized && taskSeq == this.taskSeq && agentSeq == this.agentSeq && everLaidOut) {
 			return false;
 		}
-		boolean tasksChanged = taskSeq != this.taskSeq;
+		themeRevision = dev.agentcraft.client.ui.T3Theme.revision();
+		boolean tasksChanged = taskSeq != this.taskSeq || themeChanged;
 		this.taskSeq = taskSeq;
 		this.agentSeq = agentSeq;
 		this.ppb = ppb;
@@ -1037,7 +1042,7 @@ final class TaskBoard {
 			hintColor = error;
 		} else if (yours != null) {
 			hint = yours;
-			hintColor = UiStyle.CLAY_DARK;
+			hintColor = Foreman.isT3() ? muted : UiStyle.CLAY_DARK;
 		} else if (t.ci() == CiStatus.FAIL && !done) {
 			hint = "CI failing";
 			hintColor = error;
@@ -1080,6 +1085,8 @@ final class TaskBoard {
 	}
 
 	private static Identifier portrait(@Nullable String agentId) {
+		var client = dev.agentcraft.client.t3.T3CraftClient.get();
+		if (client != null && dev.agentcraft.Cast.get(agentId) != null) agentId = client.npcSkinResource(agentId);
 		return AgentCraft.id("textures/gui/portrait/" + agentId + ".png");
 	}
 

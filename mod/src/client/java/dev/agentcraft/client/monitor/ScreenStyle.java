@@ -13,6 +13,19 @@ public record ScreenStyle(String id, boolean dark, int bgTop, int bgBottom, int 
 
 	public static final ScreenStyle PAPER = makePaper();
 	public static final ScreenStyle DARK = makeDark();
+	private static long themeRevision = -1;
+	private static ScreenStyle themed;
+	/** Cached by palette revision, so changing appearance repaints without per-frame allocation. */
+	public static ScreenStyle current() {
+		if (themed == null || themeRevision != dev.agentcraft.client.ui.T3Theme.revision()) {
+			int bg = dev.agentcraft.client.ui.T3Theme.color("surface"), text = dev.agentcraft.client.ui.T3Theme.color("text"), muted = dev.agentcraft.client.ui.T3Theme.color("textMuted"), accent = dev.agentcraft.client.ui.T3Theme.color("accentText");
+			int good = dev.agentcraft.client.ui.T3Theme.color("goodText"), error = dev.agentcraft.client.ui.T3Theme.color("errorText");
+			themed = new ScreenStyle("t3-theme", dev.agentcraft.client.ui.T3Theme.dark(), bg, bg, bg, dev.agentcraft.client.ui.T3Theme.color("border"), bg,
+				text, muted, accent, text, good, error, accent, accent, good, dev.agentcraft.client.ui.T3Theme.color("goodSurface"), error, dev.agentcraft.client.ui.T3Theme.color("errorSurface"), muted, text, dev.agentcraft.client.ui.T3Theme.color("accent"), dev.agentcraft.client.ui.T3Theme.color("accentForeground"), accent);
+			themeRevision = dev.agentcraft.client.ui.T3Theme.revision();
+		}
+		return themed;
+	}
 
 	/** Agent name colour on this screen. */
 	public int name(String agentId) {

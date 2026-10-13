@@ -42,6 +42,7 @@ final class T3Protocol {
 		}
 		out.add("messages", array(p, "messages"));
 		out.add("turnItems", array(p, "turnItems"));
+		out.add("subagents", array(p, "subagents"));
 		JsonArray activities = new JsonArray(); boolean approvals = false, inputs = false;
 		for (var value : array(p, "runtimeRequests")) {
 			JsonObject request = value.getAsJsonObject();

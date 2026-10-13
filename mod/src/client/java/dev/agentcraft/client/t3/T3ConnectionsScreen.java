@@ -13,7 +13,7 @@ import net.minecraft.network.chat.MutableComponent;
 import java.util.List;
 
 /** Pairing credentials stay in a private form, outside Minecraft's chat and narration. */
-final class T3ConnectionsScreen extends Screen {
+final class T3ConnectionsScreen extends T3MenuScreen {
 	private final T3CraftClient mod;
 	private boolean form, busy, confirming;
 	private String replacing, removing, message = "";
@@ -43,7 +43,7 @@ final class T3ConnectionsScreen extends Screen {
 			addRenderableWidget(Button.builder(Component.literal("Keep machine"), b -> { confirming = false; init(); }).bounds(x + 146, height - 58, 120, 20).build());
 		} else if (form) {
 			name = new EditBox(font, x, 96, w, 20, name, Component.literal("Machine name (optional)"));
-			name.setMaxLength(48); name.setHint(Component.literal("Optional machine name")); addRenderableWidget(name);
+			name.setMaxLength(48); placeholder(name, "Optional machine name"); addRenderableWidget(name);
 			link = new PrivateLink(x, 134, w, link); link.setResponder(value -> tick()); addRenderableWidget(link); setInitialFocus(link);
 			paste = addRenderableWidget(Button.builder(Component.literal("Paste link"), b -> { link.setValue(minecraft.keyboardHandler.getClipboard().trim()); setFocused(link); })
 				.bounds(x, 164, 104, 20).build());
@@ -77,8 +77,8 @@ final class T3ConnectionsScreen extends Screen {
 			busy = false;
 			if (error != null) { message = error; if (minecraft.gui.screen() == this) tick(); return; }
 			link.setValue(""); name = null; link = null; form = false; replacing = null;
-			message = "Pairing saved. Waiting for machine health below; Done opens your work.";
-			if (minecraft.gui.screen() == this) init();
+			message = "Pairing saved. Waiting for machine health below.";
+			if (minecraft.gui.screen() == this) { if (mod.environments().size() == 1) mod.openGuide(); else init(); }
 		});
 	}
 	private void back() {
@@ -94,12 +94,12 @@ final class T3ConnectionsScreen extends Screen {
 		if (form && pair != null) { pair.active = !busy && !link.getValue().isBlank(); paste.active = !busy; link.setEditable(!busy); name.setEditable(!busy); pair.setTooltip(message.isEmpty() ? null : Tooltip.create(Component.literal(message))); }
 	}
 	@Override public boolean isPauseScreen() { return false; }
-	@Override public boolean isInGameUi() { return true; }
+	@Override public boolean isInGameUi() { return false; }
 	@Override public void removed() { if (link != null) link.setValue(""); mod.state().setPanelOpen(false); }
 	@Override public void onClose() {
 		if (confirming) { confirming = false; init(); }
 		else if (form && !busy) back();
-		else if (mod.paired()) mod.openPanel();
+		else if (mod.paired()) super.onClose();
 		else minecraft.gui.setScreen(null);
 	}
 	@Override public boolean mouseScrolled(double x, double y, double horizontal, double vertical) {
@@ -120,35 +120,36 @@ final class T3ConnectionsScreen extends Screen {
 	}
 	@Override public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float delta) {
 		int x = left(), w = right() - x;
-		g.fill(x - 10, 10, right() + 10, height - 8, 0xF0222529);
-		g.text(font, "T3 connections", x, 20, 0xFFE5E7EB, false);
+		paper(g, x - 10, 10, right() + 10, height - 8);
+		g.text(font, "T3 connections", x, 20, INK, false);
 		if (confirming) {
-			wrapped(g, "Remove " + mod.machineLabel(removing) + " from this Minecraft client? Other machines stay connected. Its saved pins remain available if you pair this address again.", x, 58, w, 0xFFFFCC72);
-			wrapped(g, "This removes local access only. It does not revoke the device in T3 Code or remove the operator's shared pairing.", x, 110, w, 0xFF9CA3AF);
+			wrapped(g, "Remove " + mod.machineLabel(removing) + " from this Minecraft client? Other machines stay connected. Its saved pins remain available if you pair this address again.", x, 58, w, ACCENT);
+			wrapped(g, "This removes local access only. It does not revoke the device in T3 Code or remove the operator's shared pairing.", x, 110, w, MUTED);
 		} else if (form) {
-			wrapped(g, "1. In T3: Settings > Connections > pairing link.\n2. Copy the full link. Keep T3 running.", x, 40, w, 0xFFE5E7EB);
-			g.text(font, replacing == null ? "Add a machine · name optional" : "Re-pair " + T3Hud.ellipsize(font, mod.machineLabel(replacing), w - 60), x, 82, 0xFF93C5FD, false);
-			g.text(font, "Pairing link · hidden from screen and narration", x, 122, 0xFF9CA3AF, false);
+			wrapped(g, "1. In T3: Settings > Connections > pairing link.\n2. Copy the full link. Keep T3 running.", x, 40, w, INK);
+			String heading = replacing != null ? "Re-pair " + mod.machineLabel(replacing) : !mod.paired() ? "Not paired yet · Connect your T3 Code machine" : "Add a machine · name optional";
+			g.text(font, T3Hud.ellipsize(font, heading, w), x, 82, ACCENT, false);
+			g.text(font, "Pairing link · hidden from screen and narration", x, 122, MUTED, false);
 			g.enableScissor(x, 188, right(), height - 30);
 			int y = 188 - messageScroll;
 			for (var line : font.split(Component.literal(message.isEmpty() ? "Use a reachable address for another machine. No chat command needed." : message), w)) {
-				g.text(font, line, x, y, message.isEmpty() ? 0xFF9CA3AF : 0xFFFFCC72, false); y += font.lineHeight + 2;
+				g.text(font, line, x, y, message.isEmpty() ? MUTED : ACCENT, false); y += font.lineHeight + 2;
 			}
 			g.disableScissor();
 		} else {
-			g.text(font, "Your personal machines · shared server pairing is operator-owned", x, 36, 0xFF9CA3AF, false);
+			g.text(font, "Your personal machines · shared server pairing is operator-owned", x, 36, MUTED, false);
 			int count = perPage();
-			if (shown.isEmpty()) g.text(font, "Add a machine to bring your existing T3 work into Minecraft.", x, 62, 0xFF9CA3AF, false);
+			if (shown.isEmpty()) g.text(font, "Add a machine to bring your existing T3 work into Minecraft.", x, 62, MUTED, false);
 			for (int i = page * count; i < Math.min(shown.size(), (page + 1) * count); i++) {
 				var env = shown.get(i); String owner = T3Config.ownerKey(env.baseUrl); int y = 58 + (i - page * count) * 52;
 				var health = mod.state().machines().stream().filter(m -> m.owner().equals(owner)).findFirst().orElse(null);
 				String status = health == null ? "Connecting…" : health.error() != null ? recovery(health.error()) : health.online()
 					? (health.live() ? "Live" : "Connected · polling") + " · protocol " + health.protocol() + " · " + health.threads() + " threads" : "Connecting…";
-				g.text(font, T3Hud.ellipsize(font, mod.machineLabel(owner), w - 182), x, y + 2, 0xFFE5E7EB, false);
-				g.text(font, T3Hud.ellipsize(font, owner, w), x, y + 22, 0xFF9CA3AF, false);
-				g.text(font, T3Hud.ellipsize(font, status, w), x, y + 35, health != null && health.online() ? 0xFF86EFAC : 0xFFFFCC72, false);
+				g.text(font, T3Hud.ellipsize(font, mod.machineLabel(owner), w - 182), x, y + 2, INK, false);
+				g.text(font, T3Hud.ellipsize(font, owner, w), x, y + 22, MUTED, false);
+				g.text(font, T3Hud.ellipsize(font, status, w), x, y + 35, health != null && health.online() ? GOOD : ACCENT, false);
 			}
-			wrapped(g, message, x + 138, height - 58, w - 138, 0xFFFFCC72);
+			wrapped(g, message, x + 138, height - 58, w - 138, ACCENT);
 		}
 		super.extractRenderState(g, mouseX, mouseY, delta);
 	}
@@ -172,9 +173,9 @@ final class T3ConnectionsScreen extends Screen {
 		@Override protected MutableComponent createNarrationMessage() { return Component.literal(getValue().isBlank() ? "Private pairing link, empty" : "Private pairing link entered, value hidden"); }
 	@Override public boolean keyPressed(KeyEvent e) { if (e.isCopy() || e.isCut()) return true; return super.keyPressed(e); }
 		@Override public void extractWidgetRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float delta) {
-			g.fill(getX() - 1, getY() - 1, getX() + getWidth() + 1, getY() + getHeight() + 1, isFocused() ? 0xFF93C5FD : 0xFF9CA3AF);
-			g.fill(getX(), getY(), getX() + getWidth(), getY() + getHeight(), 0xFF101114);
-			g.text(font, getValue().isBlank() ? "Paste the complete pairing link" : "Pairing link entered (hidden)", getX() + 4, getY() + 6, 0xFFE5E7EB, false);
+			g.fill(getX() - 1, getY() - 1, getX() + getWidth() + 1, getY() + getHeight() + 1, isFocused() ? ACCENT : MUTED);
+			g.fill(getX(), getY(), getX() + getWidth(), getY() + getHeight(), WELL);
+			g.text(font, getValue().isBlank() ? "Paste the complete pairing link" : "Pairing link entered (hidden)", getX() + 4, getY() + 6, INK, false);
 		}
 	}
 }

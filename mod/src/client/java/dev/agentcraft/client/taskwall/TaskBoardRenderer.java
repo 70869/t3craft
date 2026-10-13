@@ -154,8 +154,10 @@ public class TaskBoardRenderer extends StationRenderer<TaskBoardBlockEntity, Tas
 		int light = s.light;
 		int headInk = UiStyle.color("paper.text", 0xFF1F1E1D);
 		int muted = UiStyle.color("paper.muted", 0xFF655E55);
-		// the board's own walnut surface, evenly lit (the block face is shaded by its facing; the cards are not)
-		drawTiled(ps, c, b, SURFACE, light);
+		// Keep each deferred geometry buffer intact until the collector draws it.
+		DisplayDraw.Rects canvas = b.canvas.clear();
+		canvas.add(b.ix0, b.iy0, b.ix1, b.iy1, 0, dev.agentcraft.client.ui.T3Theme.color("canvas"), light);
+		canvas.submit(ps, c);
 		// ---- column rules + headers (one rect batch)
 		DisplayDraw.Rects r = b.lanes.clear();
 		int rule = UiStyle.color("board.rule", 0xFFC9A227);
@@ -179,16 +181,16 @@ public class TaskBoardRenderer extends StationRenderer<TaskBoardBlockEntity, Tas
 		ps.pushPose();
 		ps.translate(0, 0, 3 * Z);
 		for (TaskBoard.Column col : b.columns) {
-			WorldUi.submitText(ps, c, col.label, col.ax + 4, b.iy0 + 3, headInk, light);
-			WorldUi.submitText(ps, c, col.countSeq, col.countX(), b.iy0 + 3, muted, light);
+			WorldUi.submitFaceText(ps, c, col.label, col.ax + 4, b.iy0 + 3, headInk, light);
+			WorldUi.submitFaceText(ps, c, col.countSeq, col.countX(), b.iy0 + 3, muted, light);
 			if (col.blocked > 0 && col.blockedW > 0) {
 				// explicit "1 blocked" in the error colour, apart from the column's count
 				float bx = col.countX() - 8 - col.blockedW;
-				WorldUi.submitText(ps, c, col.blockedSeq, bx, b.iy0 + 3, UiStyle.color("paper.del_fg", 0xFF873C2A), light);
+				WorldUi.submitFaceText(ps, c, col.blockedSeq, bx, b.iy0 + 3, UiStyle.color("paper.del_fg", 0xFF873C2A), light);
 			}
 			if (col.chip != null) {
 				float textX=Foreman.isT3() ? col.ax+(col.aw-Minecraft.getInstance().font.width(col.chip))/2 : col.chipX()+5;
-				WorldUi.submitText(ps, c, col.chip, textX, col.chipY + 2, muted, light);
+				WorldUi.submitFaceText(ps, c, col.chip, textX, col.chipY + 2, muted, light);
 			}
 		}
 		ps.popPose();
@@ -252,11 +254,11 @@ public class TaskBoardRenderer extends StationRenderer<TaskBoardBlockEntity, Tas
 		ps.translate(0, 0, 3 * Z);
 		int ink = UiStyle.color("paper.text", 0xFF1F1E1D);
 		int muted = UiStyle.color("paper.muted", 0xFF655E55);
-		WorldUi.submitText(ps, c, l1, x + 9, y + 5, ink, light);
-		WorldUi.submitText(ps, c, pre, x + 9, ky + 1, muted, light);
+		WorldUi.submitFaceText(ps, c, l1, x + 9, y + 5, ink, light);
+		WorldUi.submitFaceText(ps, c, pre, x + 9, ky + 1, muted, light);
 		if (kw > 0) {
-			WorldUi.submitText(ps, c, key, kx + 4, ky + 1, ink, light);
-			WorldUi.submitText(ps, c, post, kx + kw, ky + 1, muted, light);
+			WorldUi.submitFaceText(ps, c, key, kx + 4, ky + 1, ink, light);
+			WorldUi.submitFaceText(ps, c, post, kx + kw, ky + 1, muted, light);
 		}
 		ps.popPose();
 	}
@@ -278,7 +280,7 @@ public class TaskBoardRenderer extends StationRenderer<TaskBoardBlockEntity, Tas
 		ps.pushPose();
 		ps.translate(0, 0, LIFT + 6 * Z);
 		WorldUi.submitSprite(ps, c, WorldUi.Layer.SOLID, DisplayDraw.dot(never ? "idle" : "error", false), x + 5, y + 4, 7, 7, 0f, 0xFFFFFFFF, light);
-		WorldUi.submitText(ps, c, label, x + 15, y + 4, UiStyle.color("paper.text", 0xFF1F1E1D), light);
+		WorldUi.submitFaceText(ps, c, label, x + 15, y + 4, UiStyle.color("paper.text", 0xFF1F1E1D), light);
 		ps.popPose();
 	}
 
@@ -350,16 +352,18 @@ public class TaskBoardRenderer extends StationRenderer<TaskBoardBlockEntity, Tas
 				card.arrivedFrom = null;
 			}
 		}
-		TextureAtlasSprite sprite = WorldUi.sprite(card.sprite);
 		float zc = lift + 2 * Z;
 		// opaque body without the sprite's translucent shadow row, then a soft shadow under it
-		c.order(0).submitCustomGeometry(ps, WorldUi.guiAtlasSolid(), (pose, vc) -> DisplayDraw.nineSlice(pose, vc, sprite, x, y, w,
-			h - 1, zc, 0xFFFFFFFF, light, 1));
+		ps.pushPose(); ps.translate(0, 0, zc);
+		DisplayDraw.Rects body = card.body.clear();
+		body.add(x, y, x + w, y + h - 1, 0, dev.agentcraft.client.ui.T3Theme.color("surfaceRaised"), light);
+		body.submit(ps, c);
+		ps.popPose();
 		DisplayDraw.Rects soft = card.shadow.clear();
 		int shadowInk = UiStyle.color("palette.ui.shadow", 0xFF1F1E1D);
 		soft.add(x + 1, y + h - 1, x + w, y + h, zc, UiStyle.withAlpha(shadowInk, 60), light);
 		soft.add(x + 2, y + h, x + w - 1, y + h + 1, zc, UiStyle.withAlpha(shadowInk, 24), light);
-		if (ct.needsYou && !hovered) {
+		if (ct.needsYou && !hovered && !Foreman.isT3()) {
 			// waits on you: a breathing clay outline (same pulse as every other "waiting" surface)
 			float k = dev.agentcraft.client.ui.StatusMap.pulse(now);
 			int clay = UiStyle.status("waiting");
@@ -384,7 +388,7 @@ public class TaskBoardRenderer extends StationRenderer<TaskBoardBlockEntity, Tas
 			int n = Math.max(1, Math.min(ct.lines.size(), (int) ((h - 5) / TaskBoard.LINE)));
 			float ty = y + (h - 1 - (n * TaskBoard.LINE - 2)) / 2f;
 			for (int i = 0; i < n; i++) {
-				WorldUi.submitText(ps, c, ct.lines.get(i), cx0, ty + i * TaskBoard.LINE, ct.titleColor, light);
+				WorldUi.submitFaceText(ps, c, ct.lines.get(i), cx0, ty + i * TaskBoard.LINE, ct.titleColor, light);
 			}
 			if (ct.face != null && (ct.size != TaskBoard.Size.FULL || ct.dot == null)) {
 				DisplayDraw.submitTexture(ps, c, ct.face, cx1 - 8, ty, 8, 8, 0f, 0xFFFFFFFF, light);
@@ -398,15 +402,15 @@ public class TaskBoardRenderer extends StationRenderer<TaskBoardBlockEntity, Tas
 				if (i > 0 && ly + 8 > fy - 2) {
 					break; // the footer has risen into this line: the next content takes over once it fits
 				}
-				WorldUi.submitText(ps, c, ct.lines.get(i), cx0, ly, ct.titleColor, light);
+				WorldUi.submitFaceText(ps, c, ct.lines.get(i), cx0, ly, ct.titleColor, light);
 			}
-			int reasonInk = UiStyle.color("paper.del_fg", 0xFF873C2A);
+			int reasonInk = ct.needsYou ? UiStyle.color("paper.muted", 0xFF655E55) : UiStyle.color("paper.del_fg", 0xFF873C2A);
 			for (int i = 0; i < ct.reason.size(); i++, li++) {
 				float ly = ty + li * TaskBoard.LINE;
 				if (ly + 8 > fy - 2) {
 					break;
 				}
-				WorldUi.submitText(ps, c, ct.reason.get(i), cx0, ly, reasonInk, light);
+				WorldUi.submitFaceText(ps, c, ct.reason.get(i), cx0, ly, reasonInk, light);
 			}
 			if (ct.dot != null) {
 				if (ct.dot.equals("waiting")) {
@@ -426,10 +430,10 @@ public class TaskBoardRenderer extends StationRenderer<TaskBoardBlockEntity, Tas
 			}
 			FormattedCharSequence name = ct.name;
 			if (name != null) {
-				WorldUi.submitText(ps, c, name, fx, fy, ct.nameColor, light);
+				WorldUi.submitFaceText(ps, c, name, fx, fy, ct.nameColor, light);
 			}
 			if (ct.hint != null) {
-				WorldUi.submitText(ps, c, ct.hint, ct.hintLeft ? fx : cx1 - ct.hintW, fy, ct.hintColor, light);
+				WorldUi.submitFaceText(ps, c, ct.hint, ct.hintLeft ? fx : cx1 - ct.hintW, fy, ct.hintColor, light);
 			}
 		}
 		ps.popPose();

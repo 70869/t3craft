@@ -13,7 +13,7 @@ The unused stop/process runner scripts and duplicate upstream README were remove
 | Remaining material | Why it remains | Next cleanup |
 | --- | --- | --- |
 | Internal `ForemanSnapshot` / protocol names | The original HQ renderer consumes them; T3Projection supplies real T3 state | Rename and narrow the rendering model |
-| Dormant `ForemanLink` and old agent/console/decision/diff/library screens | Disabled runtime connection; old developer commands still refer to some classes | Ordinary interactions and standard screen aliases now use T3; remove the remaining legacy developer commands, then delete these classes |
+| Historical `ForemanLink` shim and agent/console/decision/diff/library previews | The old 466-line network implementation was removed; a small compatibility shim keeps rendering tools usable | Ordinary interactions use T3; preview classes and DTO renaming remain maintenance work |
 | DevBridge and nested Java-WebSocket JAR | Opt-in game screenshot/inspection tools; disabled in installed profile | Separate into a developer artifact if a smaller release is wanted |
 | `tools/scene.mjs` mock studio fixtures | Isolated rendering tests, never a live chat source | Keep only useful renderer tests |
 | Original art, source art, screenshots and historical design/QA docs | Studio assets and provenance | Move historical reference material out of the distributable checkout |
@@ -25,4 +25,4 @@ The next valuable cleanup is replacing the old studio DTO names and removing dor
 
 ## Feature scope
 
-Pending native T3 controls are feature work, not bloat. They include archived chats, attachments, terminal interaction, scheduler/delegation management, provider options, worktree authoring, steering/queue editing and PR operations. See [coverage](T3-INTEGRATION.md#feature-coverage).
+Native advanced controls are now implemented, including archived chats, attachments, terminal interaction, scheduler/delegation management, provider options, worktree authoring, steering/queue editing and PR operations. See [coverage and remaining validation limits](T3-INTEGRATION.md#feature-coverage).

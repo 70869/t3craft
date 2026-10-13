@@ -104,6 +104,7 @@ DESCRIBE = [
     ("gui/kit.json", "GUI kit manifest: every sprite's id, size, 9-slice insets, content padding, text colour"),
     ("gui/ui-style.json", "display/UI colour tokens (monitor log kinds, paper GUI, status, agent text colours)"),
     ("palette.json", "runtime copy of the Warm Studio palette"),
+    ("t3-themes.json", "pinned T3 Code built-in light/dark color roles; MIT source and conversion recorded in snapshot"),
     ("cast.json", "runtime copy of the cast (ids, names, colours, skins, portraits)"),
 ]
 
@@ -210,7 +211,7 @@ def build():
         ("gen/extract_ref.py", "vanilla reference textures/models/font for the review sheets, from Loom's cached client jar"),
         ("gen/common.py, gen/tex.py", "palette loading, grid painting, deterministic hashing, PNG writing"),
         ("gen/skinlib.py", "64x64 skin layout (classic + slim), face orientation rules, validation (opaque base layer, binary overlay alpha)"),
-        ("gen/skins.py + gen/chars/<id>.py", "one module per agent; every face is a literal pixel grid"),
+        ("gen/skins.py + gen/chars/<id>.py", "six hand-authored core skins and eighteen CC0 pack skins converted from legacy 64x32 UVs"),
         ("gen/cast_check.py", "CIEDE2000 distances (identity vs status >= 25, agent vs agent >= 18, accent vs status >= 20) + WCAG name tints checked against every surface they are drawn on, written back into cast.json"),
         ("gen/portraits.py", "8x8 and 20x20 framed GUI portraits cut from the skins"),
         ("gen/blocks.py", "16x16 block textures (hand grids + structured procedural for tileable materials); asserts opacity"),

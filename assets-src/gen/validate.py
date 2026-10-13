@@ -124,7 +124,9 @@ def main():
     sys.path.insert(0, str(Path(__file__).parent))
     from skinlib import FACES, PARTS, face_rect  # noqa: E402
     cast = json.loads((OUT / "cast.json").read_text(encoding="utf-8"))["agents"]
-    for a in cast:
+    from skins import CAST
+    skins = cast + [{"id": cid, "model": "default"} for cid in CAST if cid not in {a["id"] for a in cast}]
+    for a in skins:
         img = Image.open(OUT / "textures" / "entity" / "agent" / f"{a['id']}.png").convert("RGBA")
         assert img.size == (64, 64)
         slim = a["model"] == "slim"
@@ -143,7 +145,7 @@ def main():
     problems += emissive_and_coplanar(models)
     problems += resource_ids()
     print(f"validate: {len(models)} models, {len(list((OUT / 'blockstates').glob('*.json')))} blockstates, "
-          f"{len(list((OUT / 'items').glob('*.json')))} items, {len(cast)} skins -> "
+          f"{len(list((OUT / 'items').glob('*.json')))} items, {len(skins)} skins -> "
           + ("OK" if not problems else f"{len(problems)} problems"))
     for pr in problems[:50]:
         print("  ", pr)

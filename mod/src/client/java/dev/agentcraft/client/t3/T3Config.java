@@ -31,6 +31,8 @@ public final class T3Config {
 	public String baseUrl;
 	public String accessToken;
 	public String threadId;
+	/** Local onboarding only; no T3 execution state. */
+	public boolean workflowGuideSeen;
 	/**
 	 * Where the agent villagers stand. On a client this is only the pre-0.1.5 single village,
 	 * adopted by the first world visited; on a server it is the shared village.
@@ -50,6 +52,13 @@ public final class T3Config {
 	public boolean books = true;
 	/** Lets local agents run commands through the MCP server. Off until the player opts in. */
 	public boolean agentCommands;
+	/** Use the dark palette for T3's in-game screens. */
+	public boolean darkTheme;
+	public String theme = "t3-code";
+	/** Null means the selected T3 palette's own accent. */
+	public String accentColor;
+	/** Private unsent text and retry commands. Never replayed automatically. */
+	public java.util.Map<String, T3Drafts.Entry> drafts = new java.util.HashMap<>();
 
 	public boolean paired() {
 		return !environments.isEmpty();
@@ -82,6 +91,9 @@ public final class T3Config {
 			if (Files.exists(path)) {
 				T3Config config = GSON.fromJson(Files.readString(path), T3Config.class);
 				if (config != null) {
+					if (config.drafts == null) config.drafts = new java.util.HashMap<>();
+					config.drafts.values().removeIf(java.util.Objects::isNull);
+					config.drafts.values().forEach(T3Drafts.Entry::recover);
 					if (config.environments == null) config.environments = new java.util.ArrayList<>();
 					if (config.environments.isEmpty() && config.baseUrl != null && config.accessToken != null) {
 						config.environments.add(new Environment("This Mac", config.baseUrl, config.accessToken));

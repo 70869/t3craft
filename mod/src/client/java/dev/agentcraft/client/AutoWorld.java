@@ -32,7 +32,7 @@ import net.minecraft.world.level.levelgen.presets.WorldPresets;
 /**
  * Boots straight into the "AgentCraft HQ" world without any clicks: the first time the title
  * screen appears, the world is loaded if it exists, or created (creative, peaceful, superflat
- * grass meadow with no structures/decoration) if it does not. Disable with AGENTCRAFT_AUTOWORLD=0.
+ * island in a flat ocean with no structures/decoration) if it does not. Disable with AGENTCRAFT_AUTOWORLD=0.
  */
 public final class AutoWorld {
 	private static boolean attempted;
@@ -86,7 +86,7 @@ public final class AutoWorld {
 					WorldDataConfiguration.DEFAULT
 				);
 				WorldOptions options = new WorldOptions("agentcraft-hq".hashCode(), false, false);
-				mc.createWorldOpenFlows().createFreshLevel(HqWorld.LEVEL_NAME, settings, options, AutoWorld::meadowDimensions, new TitleScreen());
+				mc.createWorldOpenFlows().createFreshLevel(HqWorld.LEVEL_NAME, settings, options, AutoWorld::islandDimensions, new TitleScreen());
 			}
 		} catch (Exception e) {
 			AgentCraft.LOGGER.error("AutoWorld failed; staying on the title screen", e);
@@ -94,18 +94,18 @@ public final class AutoWorld {
 		}
 	}
 
-	/** Normal dimensions, with the overworld replaced by a flat plains meadow (grass top at y=64). */
-	private static WorldDimensions meadowDimensions(HolderLookup.Provider registries) {
-		Holder<Biome> plains = registries.lookupOrThrow(Registries.BIOME).getOrThrow(Biomes.PLAINS);
-		FlatLevelGeneratorSettings base = new FlatLevelGeneratorSettings(Optional.of(HolderSet.empty()), plains, List.of());
-		// y=-64 bedrock, stone up to 60, dirt 61..63, grass 64.
+	/** Ocean outside the built island; the HQ builder supplies the raised campus at y=64. */
+	private static WorldDimensions islandDimensions(HolderLookup.Provider registries) {
+		Holder<Biome> ocean = registries.lookupOrThrow(Registries.BIOME).getOrThrow(Biomes.OCEAN);
+		FlatLevelGeneratorSettings base = new FlatLevelGeneratorSettings(Optional.of(HolderSet.empty()), ocean, List.of());
+		// y=-64 bedrock, stone through 47, seabed 48, water 49..63.
 		List<FlatLayerInfo> layers = List.of(
 			new FlatLayerInfo(1, Blocks.BEDROCK),
-			new FlatLayerInfo(124, Blocks.STONE),
-			new FlatLayerInfo(3, Blocks.DIRT),
-			new FlatLayerInfo(1, Blocks.GRASS_BLOCK)
+			new FlatLayerInfo(111, Blocks.STONE),
+			new FlatLayerInfo(1, Blocks.GRAVEL),
+			new FlatLayerInfo(15, Blocks.WATER)
 		);
-		FlatLevelGeneratorSettings flat = base.withBiomeAndLayers(layers, Optional.of(HolderSet.empty()), plains);
+		FlatLevelGeneratorSettings flat = base.withBiomeAndLayers(layers, Optional.of(HolderSet.empty()), ocean);
 		return WorldPresets.createNormalWorldDimensions(registries).replaceOverworldGenerator(registries, new FlatLevelSource(flat));
 	}
 }

@@ -14,10 +14,9 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 
 /**
- * The agent nameplate: an opaque ink pill (kit {@code nameplate}, drawn on {@link WorldUi.Layer#SOLID})
- * above the head with a status dot + the name in the agent's colour, and the activity line under it
- * in warm grey. Billboarded, depth-tested, full-bright. Waiting-on-user agents get a pulsing clay
- * halo on the dot.
+ * Resident information above the head: a separate project pill, plain name, and a colored
+ * conversation card with its thread title and current activity. Billboarded and depth-tested.
+ * Waiting-on-user residents get a pulsing halo on the status dot.
  *
  * <p>Two variants per agent, both cached on the {@link AgentView} and rebuilt only when their text
  * changes (drawing allocates nothing per frame): the full plate and a compact name-only pill.
@@ -36,17 +35,21 @@ public final class Nameplate {
 	public static final double SCALE_FROM = 12;
 	/** ... up to this factor (so mid-distance plates stay legible, docs/visual-bar.md "three distances"). */
 	public static final float SCALE_MAX = 1.6f;
-	private static final int DOT = 7;
+	private static final int DOT = 9;
 	private static final int GAP = 3;
+	private static final int NAME_HEIGHT = 9;
+	private static final int NAME_GAP = 2;
+	private static final int PROJECT_HEIGHT = 17;
+	private static final int PROJECT_GAP = 4;
 	/** Leader lines are drawn when the plate is lifted more than this (plate px). */
 	private static final float LEADER_MIN = 3f;
 
 	/** A laid-out plate (pixel units). {@code compact}: name only. */
 	public record Data(String name, int nameColor, String family, String activity, boolean stale, boolean paused, boolean compact,
 		FormattedCharSequence nameSeq, FormattedCharSequence activitySeq, int width, int height, int innerWidth, int row1Width, int row2Width,
-		FormattedCharSequence activitySeq2, int row3Width) {
-		boolean sameText(String n, int c, String f, String a, boolean s, boolean p) {
-			return name.equals(n) && nameColor == c && family.equals(f) && activity.equals(a) && stale == s && paused == p;
+		FormattedCharSequence activitySeq2, int row3Width, FormattedCharSequence projectSeq, int projectWidth, String projectTitle) {
+		boolean sameText(String n, int c, String f, String a, String project, boolean s, boolean p) {
+			return name.equals(n) && nameColor == c && family.equals(f) && activity.equals(a) && projectTitle.equals(project) && stale == s && paused == p;
 		}
 	}
 
@@ -55,10 +58,10 @@ public final class Nameplate {
 
 	/** The full plate for a view, cached until its name/colour/dot/activity/stale changes. Client thread. */
 	public static Data of(AgentView v) {
-		String act = v.activityLine();
+		String act = (v.threadTitle.isBlank() ? "" : v.threadTitle.replace('\n', ' ').replace('\r', ' ') + "\n") + v.activityLine();
 		String fam = v.dotFamily();
 		Data d = v.plateCache;
-		if (d != null && d.sameText(v.name, v.nameColor, fam, act, v.stale, v.showsPaused())) {
+		if (d != null && d.sameText(v.name, v.nameColor, fam, act, v.projectTitle == null ? "" : v.projectTitle, v.stale, v.showsPaused())) {
 			return d;
 		}
 		d = layout(v, fam, act, false);
@@ -69,11 +72,11 @@ public final class Nameplate {
 	/** The compact (name-only) plate; the full plate itself when there is no activity line. */
 	public static Data compactOf(AgentView v) {
 		Data full = of(v);
-		if (full.row2Width() == 0) {
+		if (full.row2Width() == 0 && full.projectWidth() == 0) {
 			return full;
 		}
 		Data d = v.compactCache;
-		if (d != null && d.sameText(v.name, v.nameColor, full.family(), full.activity(), v.stale, full.paused())) {
+		if (d != null && d.sameText(v.name, v.nameColor, full.family(), full.activity(), v.projectTitle == null ? "" : v.projectTitle, v.stale, full.paused())) {
 			return d;
 		}
 		d = layout(v, full.family(), full.activity(), true);
@@ -86,24 +89,40 @@ public final class Nameplate {
 		Kit.Padding pad = Kit.padding("nameplate");
 		// the activity wraps to a second line before it is ever cut ("outlining the Tags docs");
 		// a question waiting for you is shown in full by the podium bubble, so the plate just says so
-		String shown = act.startsWith("asking you") ? "question for you" : act.replace("`", "");
+		String[] lines = act.split("\n", 2);
+		boolean threadCard = lines.length == 2;
+		String status = threadCard ? lines[1] : act;
+		String shown = status.startsWith("asking you") ? "question for you" : status.replace("`", "");
+		if ("working".equals(fam) && !shown.isEmpty() && !shown.startsWith("Working")) shown = "Working · " + shown;
+		if ("thinking".equals(fam) && !shown.isEmpty() && !shown.startsWith("Thinking")) shown = "Thinking · " + shown;
+		if ("waiting".equals(fam) && !shown.isEmpty() && !shown.startsWith("Needs you") && !shown.equals("question for you")) shown = "Needs you · " + shown;
+		if ("error".equals(fam) && !shown.isEmpty() && !shown.startsWith("Failed")) shown = "Failed · " + shown;
 		String activity = "";
 		String activity2 = "";
+		String project = !compact && v.active && v.projectTitle != null && !v.projectTitle.isBlank()
+			? TextUtil.ellipsize(font, "Project · " + v.projectTitle, MAX_ACTIVITY_PX) : "";
 		if (!compact && !shown.isEmpty()) {
-			List<String> wrapped = TextUtil.wrapPlain(font, shown, MAX_ACTIVITY_PX);
-			activity = wrapped.get(0);
-			if (wrapped.size() > 1) {
-				activity2 = TextUtil.ellipsize(font, String.join(" ", wrapped.subList(1, wrapped.size())), MAX_ACTIVITY_PX);
+			if (threadCard) {
+				activity = TextUtil.ellipsize(font, lines[0], MAX_ACTIVITY_PX);
+				activity2 = TextUtil.ellipsize(font, shown, MAX_ACTIVITY_PX);
+			} else {
+				List<String> wrapped = TextUtil.wrapPlain(font, shown, MAX_ACTIVITY_PX);
+				activity = wrapped.get(0);
+				if (wrapped.size() > 1) activity2 = TextUtil.ellipsize(font, String.join(" ", wrapped.subList(1, wrapped.size())), MAX_ACTIVITY_PX);
 			}
 		}
-		int row1 = DOT + GAP + font.width(v.name);
+		int row1 = font.width(v.name);
 		int row2 = activity.isEmpty() ? 0 : font.width(activity);
 		int row3 = activity2.isEmpty() ? 0 : font.width(activity2);
-		int innerW = Math.max(row1, Math.max(row2, row3));
+		int row4 = project.isEmpty() ? 0 : font.width(project);
+		int activityW = activity.isEmpty() ? 0 : DOT + GAP + Math.max(row2, row3);
+		int innerW = Math.max(row1 + (compact ? DOT + GAP : 0), Math.max(Math.max(activityW, row3), row4));
 		int w = innerW + pad.left() + pad.right() + 2;
-		int h = pad.top() + 9 + (activity.isEmpty() ? 0 : 10) + (activity2.isEmpty() ? 0 : 10) + pad.bottom() + 1;
+		int activityHeight = activity.isEmpty() ? 0 : pad.top() + 9 + (activity2.isEmpty() ? 0 : 10) + pad.bottom() + 1;
+		int h = NAME_HEIGHT + NAME_GAP + activityHeight + (project.isEmpty() ? 0 : PROJECT_HEIGHT + PROJECT_GAP);
 		return new Data(v.name, v.nameColor, fam, act, v.stale, v.showsPaused(), compact, Component.literal(v.name).getVisualOrderText(),
-			Component.literal(activity).getVisualOrderText(), w, h, innerW, row1, row2, Component.literal(activity2).getVisualOrderText(), row3);
+			Component.literal(activity).getVisualOrderText(), w, h, innerW, row1, row2, Component.literal(activity2).getVisualOrderText(), row3,
+			Component.literal(project).getVisualOrderText(), row4, v.projectTitle == null ? "" : v.projectTitle);
 	}
 
 	/** World size factor for a plate at this camera distance (blocks). */
@@ -152,10 +171,33 @@ public final class Nameplate {
 				WorldUi.submitFill(poseStack, collector, -0.5f, top, 0.5f, -1f, line, light);
 			}
 		}
-		WorldUi.submitNineSlice(poseStack, collector, WorldUi.Layer.SOLID, Kit.NAMEPLATE, x0, y0, d.width(), d.height(), 0xFFFFFFFF, light);
-		float cx = x0 + pad.left() + 1 + (d.innerWidth() - d.row1Width()) / 2f;
-		float ty = y0 + pad.top() + 1;
-		if (d.paused()) {
+		int projectSpace = d.projectWidth() > 0 ? PROJECT_HEIGHT + PROJECT_GAP : 0;
+		if (projectSpace > 0) {
+			int projectBoxWidth = d.projectWidth() + pad.left() + pad.right() + 2;
+			WorldUi.submitFill(poseStack, collector, -projectBoxWidth / 2f, y0, projectBoxWidth / 2f, y0 + PROJECT_HEIGHT, dev.agentcraft.client.ui.T3Theme.color("surface"), light);
+			WorldUi.submitText(poseStack, collector, d.projectSeq(), -d.projectWidth() / 2f, y0 + 4,
+				UiStyle.color("ink_ui.activity", 0xFFC4BDB2), light);
+		}
+		float nameTop = y0 + projectSpace;
+		float nameX = -d.row1Width() / 2f;
+		if (d.compact()) {
+			nameX += (DOT + GAP) / 2f;
+			WorldUi.submitSprite(poseStack, collector, WorldUi.Layer.OVERLAY, Kit.dot(d.family(), false), nameX - DOT - GAP, nameTop, DOT, DOT, .15f, 0xFFFFFFFF, light);
+		}
+		WorldUi.submitText(poseStack, collector, d.nameSeq(), nameX, nameTop, UiStyle.agentOnLight(s.agentId), light);
+		float cardTop = nameTop + NAME_HEIGHT + NAME_GAP;
+		int cardInner = d.row2Width() == 0 ? 0 : DOT + GAP + Math.max(d.row2Width(), d.row3Width());
+		int cardWidth = cardInner == 0 ? 0 : cardInner + pad.left() + pad.right() + 2;
+		float cardX = -cardWidth / 2f;
+		if (cardWidth > 0) {
+			WorldUi.submitFill(poseStack, collector, cardX, cardTop, cardX + cardWidth, cardTop + d.height() - NAME_HEIGHT - NAME_GAP - projectSpace,
+				dev.agentcraft.client.ui.T3Theme.color("surface"), light);
+			int familyColor = d.stale() ? UiStyle.color("ink_ui.ghost", 0xFF857D71) : UiStyle.status(d.family());
+			WorldUi.submitFill(poseStack, collector, cardX, cardTop, cardX + 2, cardTop + d.height() - NAME_HEIGHT - NAME_GAP - projectSpace, familyColor, light);
+		}
+		float cx = cardX + pad.left() + 1;
+		float ty = cardTop + pad.top() + 1;
+		if (d.paused() && d.row2Width() > 0) {
 			// paused by you: a pause glyph instead of the dot (also on the compact pill)
 			poseStack.pushPose();
 			poseStack.translate(0f, 0f, 0.3f);
@@ -164,21 +206,20 @@ public final class Nameplate {
 			WorldUi.submitFill(poseStack, collector, cx + 4.5f, ty + 1, cx + 6.5f, ty + 1 + DOT, bar, light);
 			poseStack.popPose();
 		} else {
-			if ("waiting".equals(d.family())) {
+			if (d.row2Width() > 0 && "waiting".equals(d.family())) {
 				float pulse = 0.5f + 0.5f * (float) Math.sin(s.timeSeconds * Math.PI * 2 / (UiStyle.metric("metrics.pulse_ms", 1200) / 1000.0));
 				int a = (int) (90 + 165 * pulse);
 				WorldUi.submitSprite(poseStack, collector, Kit.dot("waiting", true), cx - 2, ty - 1, 11, 11, (a << 24) | 0xFFFFFF, light);
 			}
-			WorldUi.submitSprite(poseStack, collector, WorldUi.Layer.OVERLAY, Kit.dot(d.family(), false), cx, ty + 1, DOT, DOT, 0.15f, 0xFFFFFFFF, light);
+			if (d.row2Width() > 0) WorldUi.submitSprite(poseStack, collector, WorldUi.Layer.OVERLAY, Kit.dot(d.family(), false), cx, ty + 1, DOT, DOT, 0.15f, 0xFFFFFFFF, light);
 		}
-		WorldUi.submitText(poseStack, collector, d.nameSeq(), cx + DOT + GAP, ty, d.stale() ? UiStyle.withAlpha(d.nameColor(), 0xB0) : d.nameColor(),
-			light);
 		if (d.row2Width() > 0) {
 			int actColor = d.stale() ? UiStyle.color("ink_ui.ghost", 0xFF857D71) : UiStyle.color("ink_ui.activity", 0xFFC4BDB2);
-			WorldUi.submitText(poseStack, collector, d.activitySeq(), x0 + pad.left() + 1 + (d.innerWidth() - d.row2Width()) / 2f, ty + 10, actColor,
+			float activityX = cx + DOT + GAP + (cardInner - DOT - GAP - d.row2Width()) / 2f;
+			WorldUi.submitText(poseStack, collector, d.activitySeq(), activityX, ty, d.activity().contains("\n") ? dev.agentcraft.client.ui.T3Theme.color("text") : actColor,
 				light);
 			if (d.row3Width() > 0) {
-				WorldUi.submitText(poseStack, collector, d.activitySeq2(), x0 + pad.left() + 1 + (d.innerWidth() - d.row3Width()) / 2f, ty + 20,
+				WorldUi.submitText(poseStack, collector, d.activitySeq2(), cx + DOT + GAP + (cardInner - DOT - GAP - d.row3Width()) / 2f, ty + 10,
 					actColor, light);
 			}
 		}

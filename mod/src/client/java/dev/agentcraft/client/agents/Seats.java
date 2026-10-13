@@ -32,7 +32,7 @@ import org.jspecify.annotations.Nullable;
 public final class Seats {
 	/** Hip-to-thigh-underside height of the seated model (blocks, model scale 0.9375). */
 	public static final double THIGH = 0.586;
-	private static final int RECHECK_TICKS = 60;
+	private static final int RECHECK_TICKS = 10;
 
 	/**
 	 * A seat at an anchor. {@code sit}: where the agent's feet position goes (x/z of the sit point,
@@ -69,6 +69,17 @@ public final class Seats {
 		if (s == null && a.name().startsWith(AnchorNames.DESK_PREFIX)) {
 			s = deskChair(level, a, pathfinder);
 		}
+		if (s == null) {
+			// Furniture can move without publishing another HQ layout. Search the local station,
+			// keeping its identity while following an accessible replacement chair.
+			for (int radius = 1; radius <= 2 && s == null; radius++) {
+				for (int dx = -radius; dx <= radius && s == null; dx++) for (int dz = -radius; dz <= radius && s == null; dz++) {
+					if (Math.max(Math.abs(dx), Math.abs(dz)) != radius) continue;
+					Seat candidate = detect(level, new Anchor(a.name(), a.x() + dx, a.y(), a.z() + dz, a.yaw(), a.pitch()), pathfinder);
+					if (candidate != null && candidate.approach() != null && (!a.name().startsWith(AnchorNames.DESK_PREFIX) || !Double.isNaN(candidate.deskTop()))) s = candidate;
+				}
+			}
+		}
 		cache.put(a.name(), new Cached(s, a.x(), a.y(), a.z(), a.yaw(), tick));
 		return s;
 	}
@@ -103,6 +114,8 @@ public final class Seats {
 		if (s.getBlock() instanceof StairBlock && s.getValue(StairBlock.HALF) == Half.BOTTOM) {
 			top = 0.5;
 			hasBack = true;
+			// A stair's high half is its back. Rotation by the player changes the sitter's facing.
+			a = new Anchor(a.name(), a.x(), a.y(), a.z(), s.getValue(StairBlock.FACING).getOpposite().toYRot(), a.pitch());
 		} else if (s.getBlock() instanceof SlabBlock && s.getValue(SlabBlock.TYPE) == SlabType.BOTTOM) {
 			top = 0.5;
 		} else {
@@ -115,6 +128,8 @@ public final class Seats {
 				return null;
 			}
 		}
+		if (!level.getBlockState(p.above()).getCollisionShape(level, p.above()).isEmpty()
+			|| !level.getBlockState(p.above(2)).getCollisionShape(level, p.above(2)).isEmpty()) return null;
 		double rad = Math.toRadians(a.yaw());
 		double fx = -Math.sin(rad);
 		double fz = Math.cos(rad);

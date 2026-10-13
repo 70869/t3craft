@@ -14,7 +14,7 @@ import java.time.Instant;
 import java.util.List;
 
 /** A decision queue available from the whiteboard or a key, even away from the office. */
-final class T3DeskScreen extends Screen {
+final class T3DeskScreen extends T3MenuScreen {
 	private final T3CraftClient mod;
 	private String selected;
 	private int scroll, detailScroll;
@@ -30,7 +30,7 @@ final class T3DeskScreen extends Screen {
 		tick();
 	}
 	@Override public boolean isPauseScreen() { return false; }
-	@Override public boolean isInGameUi() { return true; }
+	@Override public boolean isInGameUi() { return false; }
 	@Override public void removed() { mod.state().setPanelOpen(false); }
 	@Override public void tick() {
 		rows = mod.state().decisions();
@@ -62,18 +62,18 @@ final class T3DeskScreen extends Screen {
 		return true;
 	}
 	@Override public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float delta) {
-		g.fill(8, 8, width - 8, height - 8, 0xF0222529);
-		g.text(font, "Decision desk · " + rows.size() + " waiting", 16, 17, 0xFFFFCC72, false);
+		paper(g, 8, 8, width - 8, height - 8);
+		g.text(font, "Decision desk · " + rows.size() + " waiting", 16, 17, ACCENT, false);
 		String offline = mod.state().offlineMachines().isEmpty() ? "All paired machines available"
 			: "Offline / reconnecting: " + String.join(", ", mod.state().offlineMachines());
-		g.text(font, T3Hud.ellipsize(font, offline, width - 32), 16, 35, mod.state().offlineMachines().isEmpty() ? 0xFF9CA3AF : 0xFFFF9772, false);
+		g.text(font, T3Hud.ellipsize(font, offline, width - 32), 16, 35, mod.state().offlineMachines().isEmpty() ? MUTED : ERROR, false);
 		for (int i = scroll; i < Math.min(rows.size(), scroll + visible()); i++) {
 			var e = rows.get(i); int y = 56 + (i - scroll) * 38;
-			if (e.key().equals(selected)) g.fill(12, y, side(), y + 36, 0xFF41464E);
-			g.text(font, T3Hud.ellipsize(font, e.thread().title(), side() - 24), 16, y + 4, 0xFFE5E7EB, false);
+			if (e.key().equals(selected)) g.fill(12, y, side(), y + 36, SELECTED);
+			g.text(font, T3Hud.ellipsize(font, e.thread().title(), side() - 24), 16, y + 4, INK, false);
 			String machine = e.thread().environment() == null ? "T3" : e.thread().environment();
-			g.text(font, T3Hud.ellipsize(font, machine + " · " + e.kind() + " · " + age(e.requestedAt()), side() - 24), 16, y + 17, 0xFFFFCC72, false);
-			g.text(font, T3Hud.ellipsize(font, e.thread().projectTitle(), side() - 24), 16, y + 27, 0xFF9CA3AF, false);
+			g.text(font, T3Hud.ellipsize(font, machine + " · " + e.kind() + " · " + age(e.requestedAt()), side() - 24), 16, y + 17, ACCENT, false);
+			g.text(font, T3Hud.ellipsize(font, e.thread().projectTitle(), side() - 24), 16, y + 27, MUTED, false);
 		}
 		var e = selection();
 		g.enableScissor(side() + 12, 56, width - 16, height - 36);
@@ -83,7 +83,7 @@ final class T3DeskScreen extends Screen {
 		var lines = font.split(Component.literal(detail), Math.max(20, width - side() - 32));
 		detailScroll = Math.min(detailScroll, Math.max(0, lines.size() - Math.max(1, (height - 94) / font.lineHeight)));
 		int y = 60;
-		for (int i = detailScroll; i < lines.size() && y < height - 36; i++, y += font.lineHeight + 2) g.text(font, lines.get(i), side() + 16, y, 0xFFE5E7EB, false);
+		for (int i = detailScroll; i < lines.size() && y < height - 36; i++, y += font.lineHeight + 2) g.text(font, lines.get(i), side() + 16, y, INK, false);
 		g.disableScissor();
 		super.extractRenderState(g, mouseX, mouseY, delta);
 	}

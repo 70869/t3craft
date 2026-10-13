@@ -50,6 +50,8 @@ public class MonitorRenderer extends StationRenderer<MonitorBlockEntity, Monitor
 		boolean caretOn;
 		float pulse;
 		int worldLight;
+		UsageWall.Data usage;
+		StudioDashboard.Data dashboard;
 	}
 
 	/** Pixel density for a panel: 1-block-high (or wide) screens get 128 px/block so a tail of 7 rows fits, bigger ones 96. */
@@ -74,13 +76,24 @@ public class MonitorRenderer extends StationRenderer<MonitorBlockEntity, Monitor
 
 	@Override
 	protected void extractStation(MonitorBlockEntity be, State s, float partialTicks) {
+		s.usage = null;
+		s.dashboard = null;
+		s.screen = null;
 		s.lit = be.getBlockState().getValue(MonitorBlock.LIT);
 		if (!s.panelOrigin) {
 			return;
 		}
+		String agent = MonitorFeature.resolveAgent(be, s.binding, s.facing, s.panelWidth, s.panelHeight);
+		String view = dev.agentcraft.client.t3.T3CraftClient.get().displayView(MonitorFeature.displayKey(be.getBlockPos()));
+		if ("usage".equals(view) || view.equals("default") && "usage".equals(s.binding)) {
+			s.usage = UsageWall.extract(s.panelWidth, s.panelHeight);
+			return;
+		}
+		if (!view.equals("default")) {
+			s.dashboard = StudioDashboard.extract(view, agent); return;
+		}
 		long now = System.nanoTime();
 		ForemanState fs = Foreman.state();
-		String agent = MonitorFeature.resolveAgent(be, s.binding, s.facing, s.panelWidth, s.panelHeight);
 		ScreenStyle st = MonitorFeature.styleFor(be.getBlockPos());
 		int ppb = density(s.panelWidth, s.panelHeight);
 		MonitorScreen m = MonitorFeature.screen(be.getBlockPos());
@@ -102,6 +115,18 @@ public class MonitorRenderer extends StationRenderer<MonitorBlockEntity, Monitor
 
 	@Override
 	public void submit(State s, PoseStack poseStack, SubmitNodeCollector collector, CameraRenderState camera) {
+		if (s.panelOrigin && s.dashboard != null) {
+			if (s.lit) {
+				poseStack.pushPose(); toFace(poseStack, s.facing, SCREEN_DEPTH, 64);
+				poseStack.translate(0, -(s.panelHeight - 1) * 64, 0);
+				StudioDashboard.submit(s.dashboard, s.panelWidth * 64, s.panelHeight * 64, poseStack, collector);
+				poseStack.popPose();
+			} return;
+		}
+		if (s.panelOrigin && s.usage != null) {
+			if (s.lit) UsageWall.submit(s.usage, s.facing, s.panelHeight, poseStack, collector);
+			return;
+		}
 		MonitorScreen m = s.screen;
 		if (!s.panelOrigin || m == null || m.style == null) {
 			return;
@@ -166,14 +191,14 @@ public class MonitorRenderer extends StationRenderer<MonitorBlockEntity, Monitor
 				WorldUi.submitSprite(ps, c, WorldUi.Layer.SOLID, r.icon(), m.cx0, top + (r.height() - LogRows.ICON) / 2f, LogRows.ICON, LogRows.ICON, 0f,
 					alpha >= 255 ? 0xFFFFFFFF : (alpha << 24) | 0xFFFFFF, light);
 			}
-			WorldUi.submitText(ps, c, r.text(), m.cx0 + r.textX(), ty, UiStyle.withAlpha(r.color(), alpha), light);
+			WorldUi.submitFaceText(ps, c, r.text(), m.cx0 + r.textX(), ty, UiStyle.withAlpha(r.color(), alpha), light);
 			y = top;
 		}
 		// ---- cursor / footer line
 		float fy = m.by1 - MonitorScreen.PAD_BOTTOM - LogRows.LINE + 1;
 		if (m.footer != null) {
 			int a = 170 + (int) (85 * s.pulse);
-			WorldUi.submitText(ps, c, m.footer, m.cx0, fy, UiStyle.withAlpha(m.footerColor, a), light);
+			WorldUi.submitFaceText(ps, c, m.footer, m.cx0, fy, UiStyle.withAlpha(m.footerColor, a), light);
 		} else if (m.caret && s.caretOn) {
 			m.dyn.add(m.cx0, fy - 0.5f, m.cx0 + 5, fy + 8, 0, st.caret(), light);
 		}
@@ -196,13 +221,13 @@ public class MonitorRenderer extends StationRenderer<MonitorBlockEntity, Monitor
 			}
 			WorldUi.submitSprite(ps, c, WorldUi.Layer.SOLID, DisplayDraw.dot(m.dotFamily, false), m.cx0, hy + 0.5f, 7, 7, DisplayDraw.Z_STEP * 0.5f, 0xFFFFFFFF,
 				light);
-			WorldUi.submitText(ps, c, m.name, m.cx0 + 10, hy, m.nameColor, light);
+			WorldUi.submitFaceText(ps, c, m.name, m.cx0 + 10, hy, m.nameColor, light);
 		}
 		if (m.activity != null) {
-			WorldUi.submitText(ps, c, m.activity, m.activityX, m.activityY, st.muted(), light);
+			WorldUi.submitFaceText(ps, c, m.activity, m.activityX, m.activityY, st.muted(), light);
 		}
 		if (m.pill != null) {
-			WorldUi.submitText(ps, c, m.pill, m.pillX, hy, m.pillColor, light);
+			WorldUi.submitFaceText(ps, c, m.pill, m.pillX, hy, m.pillColor, light);
 		}
 		// ---- centred message (off shift, no agent, connecting)
 		List<FormattedCharSequence> centre = m.centre;
@@ -210,7 +235,7 @@ public class MonitorRenderer extends StationRenderer<MonitorBlockEntity, Monitor
 			float total = centre.size() * LogRows.LINE + (centre.size() - 1) * 2;
 			float cy = (m.cy0 + m.by1 - total) / 2f;
 			for (int i = 0; i < centre.size(); i++) {
-				WorldUi.submitText(ps, c, centre.get(i), m.centreX.get(i), cy + i * (LogRows.LINE + 2), m.centreColors.get(i), light);
+				WorldUi.submitFaceText(ps, c, centre.get(i), m.centreX.get(i), cy + i * (LogRows.LINE + 2), m.centreColors.get(i), light);
 			}
 		}
 		ps.popPose();
@@ -239,7 +264,7 @@ public class MonitorRenderer extends StationRenderer<MonitorBlockEntity, Monitor
 		badge.submit(ps, c);
 		ps.translate(0, 0, Z_BADGE_TEXT);
 		WorldUi.submitSprite(ps, c, WorldUi.Layer.SOLID, DisplayDraw.dot("error", false), x + 4, y + 3.5f, 7, 7, 0f, 0xFFFFFFFF, light);
-		WorldUi.submitText(ps, c, label, x + 14, y + 3, st.badgeText(), light);
+		WorldUi.submitFaceText(ps, c, label, x + 14, y + 3, st.badgeText(), light);
 		ps.popPose();
 	}
 
@@ -253,7 +278,7 @@ public class MonitorRenderer extends StationRenderer<MonitorBlockEntity, Monitor
 		ps.translate(0, 0, Z_TEXT);
 		int muted = UiStyle.color("status.idle", 0xFF9C9488);
 		String label = m.mode == MonitorScreen.Mode.OFF_SHIFT ? "off shift" : "screen off";
-		WorldUi.submitText(ps, c, label, m.cx0, m.by1 - MonitorScreen.PAD_BOTTOM - 9, muted, light);
+		WorldUi.submitFaceText(ps, c, label, m.cx0, m.by1 - MonitorScreen.PAD_BOTTOM - 9, muted, light);
 		ps.popPose();
 	}
 }

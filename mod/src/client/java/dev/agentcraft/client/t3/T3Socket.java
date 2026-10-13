@@ -112,8 +112,23 @@ final class T3Socket implements AutoCloseable {
 			JsonObject exit = CompletableFuture.anyOf(result, closed).get(timeoutSeconds, TimeUnit.SECONDS) instanceof JsonObject json
 				? json : null;
 			if (exit == null) throw new IOException("T3 socket closed during " + tag);
-			if (!"Success".equals(exit.get("_tag").getAsString())) throw new IOException(tag + " failed: " + exit);
-			return exit.getAsJsonObject("value");
+			if (!"Success".equals(exit.get("_tag").getAsString())) {
+				if (exit.has("cause") && exit.get("cause").isJsonArray()) for (var cause : exit.getAsJsonArray("cause")) {
+					if (!cause.isJsonObject()) continue;
+					var failure = cause.getAsJsonObject().get("error");
+					if (failure != null && failure.isJsonObject()) {
+						var error = failure.getAsJsonObject();
+						if (error.has("_tag") && "EnvironmentAuthorizationError".equals(error.get("_tag").getAsString()))
+							throw new IOException("This pairing does not allow this action. Create a fresh link in T3 Settings > Connections and pair this machine again.");
+					}
+				}
+				throw new IOException(tag + " failed: " + exit);
+			}
+			var value = exit.get("value");
+			// Effect RPC encodes void success as null (writes, resize, close).
+			if (value == null || value.isJsonNull()) return new JsonObject();
+			if (!value.isJsonObject()) throw new IOException(tag + " returned an unsupported response shape");
+			return value.getAsJsonObject();
 		} catch (IOException e) {
 			throw e;
 		} catch (Exception e) {

@@ -166,7 +166,7 @@ public final class AgentsFeature {
 				});
 			});
 		DevBridge.register("dev.agents.look", 10_000,
-			"{agent?} -> each agent's life: posture, seat, sit, head yaw/pitch, bubble, exclaim, particles, family (QA)",
+			"{agent?} -> each agent's life: posture, expression, typing/mouse weights, rendered animation channels, seat, head, bubble, particles, family (QA)",
 			(req, mc) -> {
 				String only = Fields.of(req).optStr("agent", null);
 				return DevBridge.onClient(mc, () -> {
@@ -185,6 +185,11 @@ public final class AgentsFeature {
 						j.addProperty("needsYou", e.view().needsYou());
 						j.addProperty("paused", e.view().showsPaused());
 						j.addProperty("posture", l.posture().name());
+						j.addProperty("gesture", l.gesture().name());
+						j.addProperty("expression", l.expression().name());
+						j.addProperty("typing", round(l.typingAmount()));
+						j.addProperty("mouse", round(l.mouseAmount()));
+						var animation = new JsonArray(); for (float channel : l.frame) animation.add(round(channel)); j.add("animation", animation);
 						j.addProperty("seated", l.seated());
 						j.addProperty("sit", round(l.sitAmount()));
 						Seats.Seat st = l.seat();
@@ -308,6 +313,7 @@ public final class AgentsFeature {
 						j.addProperty("z", round(e.getZ()));
 						j.addProperty("yaw", round(e.getYRot()));
 						j.addProperty("station", v.station);
+						j.addProperty("threadTitle", v.threadTitle);
 						j.addProperty("anchor", v.anchor);
 						var t = e.motion().target();
 						if (t != null) {
@@ -319,6 +325,7 @@ public final class AgentsFeature {
 							j.add("target", tj);
 						}
 						j.addProperty("walking", e.motion().walking());
+						j.addProperty("crowdWait", e.motion().crowdWait());
 						JsonArray path = new JsonArray();
 						for (Vec3 p : e.motion().remainingPath()) {
 							JsonArray pj = new JsonArray();

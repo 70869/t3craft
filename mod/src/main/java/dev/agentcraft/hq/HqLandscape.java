@@ -12,6 +12,7 @@ import static dev.agentcraft.hq.StudioHqBuilder.SITE;
 
 import java.util.ArrayList;
 import java.util.List;
+import dev.agentcraft.world.HqIsland;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -137,6 +138,27 @@ final class HqLandscape {
 		trees(p);
 		foundationPlanting(p);
 		outdoorLight(p);
+		meadow(p);
+	}
+
+	/** Modern grounds share the coast's continuous terrain instead of the studio's enclosing berm. */
+	static void islandGround(Plan p) {
+		for (int x=p.minX; x<=p.maxX; x++) for (int z=p.minZ; z<=p.maxZ; z++) {
+			int height=HqIsland.groundHeight(x,z);
+			for (int y=GROUND; y<=height; y++) p.set(x,y,z,HqIsland.terrain(x,y,z));
+			p.setTop(x,z,height);
+		}
+	}
+
+	/** Shared planted woodland; callers lay out their own architecture and paths first. */
+	static void woodland(Plan p) {
+		trees(p);
+		meadow(p);
+	}
+
+	/** Keep individual campus trees while leaving ocean views open beyond the island. */
+	static void islandWoodland(Plan p) {
+		trees(p, false);
 		meadow(p);
 	}
 
@@ -579,6 +601,10 @@ final class HqLandscape {
 	}
 
 	private static void trees(Plan p) {
+		trees(p, true);
+	}
+
+	private static void trees(Plan p, boolean enclosingRing) {
 		List<int[]> placed = new ArrayList<>();
 		int[][] spots = {
 			// x, z, kind ordinal (0 birch, 1 poplar, 2 azalea, 3 oak, 4 cherry). The south-east quadrant is
@@ -597,8 +623,10 @@ final class HqLandscape {
 		}
 		// the wooded ring on the hills: an outer row of mixed spruce / oak / birch / poplar and an inner,
 		// sparser row, so the horizon is closed from every camera inside the site
-		ring(p, placed, 3, 6.5, 0, 300);
-		ring(p, placed, 9, 8.5, 3, 400);
+		if (enclosingRing) {
+			ring(p, placed, 3, 6.5, 0, 300);
+			ring(p, placed, 9, 8.5, 3, 400);
+		}
 	}
 
 	/** Camera spots (x, z) no tree may crowd (the hero and night cameras stand on the meadow). */

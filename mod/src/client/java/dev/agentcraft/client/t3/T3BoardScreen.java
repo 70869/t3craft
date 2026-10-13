@@ -7,7 +7,7 @@ import net.minecraft.network.chat.Component;
 import java.util.*;
 
 /** Four T3 lanes with independent pagination; all chats remain reachable beyond the physical wall. */
-final class T3BoardScreen extends Screen {
+final class T3BoardScreen extends T3MenuScreen {
     private final T3CraftClient mod;
     private final int[] pages=new int[4];
     private List<T3State.ThreadRow> rendered=List.of();
@@ -36,17 +36,17 @@ final class T3BoardScreen extends Screen {
     }
     @Override public void tick() { if(!rendered.equals(mod.state().snapshot().threads())) rebuild(); }
     @Override public boolean isPauseScreen() { return false; }
-    @Override public boolean isInGameUi() { return true; }
+    @Override public boolean isInGameUi() { return false; }
     @Override public void extractRenderState(GuiGraphicsExtractor g,int mx,int my,float delta) {
-        g.fill(8,8,width-8,height-8,0xF0222529); g.text(font,"T3 task board · "+rendered.size()+" chats",16,18,0xFFFFFFFF,false);
-        g.text(font,"Cards are T3 conversations. Select one to inspect its work.",16,34,0xFFA8A8A8,false);
+        paper(g, 8,8,width-8,height-8); g.text(font,"T3 task board · "+rendered.size()+" chats",16,18,INK,false);
+        g.text(font,"Cards are T3 conversations. Select one to inspect its work.",16,34,MUTED,false);
         int w=(width-44)/4,count=Math.max(1,(height-124)/36);
         String[] names={"Idle","Working","Needs you / failed","Done"};
         for(int c=0;c<4;c++) {
             int x=16+c*(w+4); var rows=lanes.get(c);
-            g.text(font,T3Hud.ellipsize(font,names[c]+" · "+rows.size(),w),x,54,0xFF93C5FD,false);
-            for(int i=pages[c]*count;i<Math.min(rows.size(),(pages[c]+1)*count);i++) { var row=rows.get(i); String label=mod.state().online(row.id()) ? row.projectTitle() : "Offline · "+row.projectTitle(); g.text(font,T3Hud.ellipsize(font,label,w),x,94+(i-pages[c]*count)*36,0xFFA8A8A8,false); }
-            g.text(font,(pages[c]+1)+"/"+Math.max(1,(rows.size()+count-1)/count),x+30,height-49,0xFFA8A8A8,false);
+            g.text(font,T3Hud.ellipsize(font,names[c]+" · "+rows.size(),w),x,54,ACCENT,false);
+            for(int i=pages[c]*count;i<Math.min(rows.size(),(pages[c]+1)*count);i++) { var row=rows.get(i); String label=mod.state().online(row.id()) ? row.projectTitle() : "Offline · "+row.projectTitle(); g.text(font,T3Hud.ellipsize(font,label,w),x,94+(i-pages[c]*count)*36,MUTED,false); }
+            g.text(font,(pages[c]+1)+"/"+Math.max(1,(rows.size()+count-1)/count),x+30,height-49,MUTED,false);
         }
         super.extractRenderState(g,mx,my,delta);
     }

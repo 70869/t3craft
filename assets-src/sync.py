@@ -72,6 +72,10 @@ def up_to_date(d: Path, r: str, data: bytes) -> bool:
 def merge_lang(dst: Path, generated: dict, prev_owned: set):
     """-> (merged bytes or None if the file should not exist, notes)."""
     notes = []
+    # UI labels belong to the mod, even if an older generator put them in its ledger.
+    owns = lambda key: key.startswith(("block.agentcraft.", "item.agentcraft.")) or key == "itemGroup.agentcraft"
+    generated = {key: value for key, value in generated.items() if owns(key)}
+    prev_owned = {key for key in prev_owned if owns(key)}
     current = load_json_file(dst, "lang file") if dst.exists() else {}
     merged = {}
     for k, v in current.items():
@@ -113,7 +117,7 @@ def main() -> int:
         d = DST / r
         if is_lang(r):
             gen = load_json_file(p, "generated lang")
-            lang_keys[r] = sorted(gen)
+            lang_keys[r] = sorted(k for k in gen if k.startswith(("block.agentcraft.", "item.agentcraft.")) or k == "itemGroup.agentcraft")
             data, n = merge_lang(d, gen, prev_keys.get(r, set()))
             notes += [f"  ~ {r}"] + n if n else []
         else:

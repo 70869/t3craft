@@ -153,7 +153,9 @@ public final class GridPathfinder {
 					if (diagonal && (Double.isNaN(floor(n.x + d[0], n.y, n.z)) || Double.isNaN(floor(n.x, n.y, n.z + d[1])))) {
 						continue; // never cut corners
 					}
-					double cost = (diagonal ? 1.41421356 : 1.0) + (dy != 0 ? 0.6 : 0);
+					// Taking a chair/table shortcut looks wrong even when its collision permits a step.
+					// Keep stairs usable, but strongly prefer the office's clear floor aisles.
+					double cost = (diagonal ? 1.41421356 : 1.0) + (dy != 0 ? 4.0 : 0);
 					double g = n.g + cost;
 					long key = BlockPos.asLong(nx, ny, nz);
 					if (g < best.getOrDefault(key, Double.MAX_VALUE) - 1e-9) {
