@@ -24,6 +24,14 @@ Modrinth prohibits AI-generated project images. The generated cover and robot ic
 
 Your T3 Code workspace inside a modern Minecraft campus office. T3Craft connects directly to your paired T3 Code machines: chats, workspaces, approvals and execution stay owned by T3 Code.
 
+### Credits and origins
+
+This project is a fork of [AgentCraft by blendi-remade](https://github.com/blendi-remade/agentcraft), which supplies the original Minecraft studio, HQ, blocks and presentation. The paired Java client is adapted from [t3craft by Maxwell Young](https://github.com/maxwellyoung/t3craft). Both projects are MIT licensed; their attribution and licenses are retained.
+
+[T3 Code by the T3 Tools team](https://github.com/pingdotgg/t3code) supplies the actual conversations, providers, workspaces and AI execution. This community Minecraft integration also adapts T3 Code's MIT-licensed theme palettes. It is not an official T3 Code release.
+
+Resident skins come from [Minetest Skins Pack 1 by isaiah658](https://opengameart.org/content/minetest-skins-pack-1), released under CC0. See the [complete third-party notices](https://github.com/70869/t3craft/blob/main/THIRD-PARTY-NOTICES.md).
+
 Chat through a compact workspace sidebar, see which thread each resident represents, and recognize work states through colored indicators and typing animations. All eighteen resident work assignments stay on the main floor. Completed residents relax with snacks, phones and idle gestures.
 
 The pack includes the author's latest cleaned campus snapshot: buildings, terrain, signs and physical stations, with private player data and account configuration removed. Every fresh install starts with this world.

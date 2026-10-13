@@ -6,6 +6,8 @@
 
 Your T3 Code workspace inside a modern Minecraft campus office. The native Fabric mod connects directly to paired T3 Code machines. T3 owns the chats, providers, workspaces and execution.
 
+A community fork of [AgentCraft by blendi-remade](https://github.com/blendi-remade/agentcraft), with the paired client adapted from [t3craft by Maxwell Young](https://github.com/maxwellyoung/t3craft), and powered by [T3 Code by the T3 Tools team](https://github.com/pingdotgg/t3code). Original MIT attribution and licenses are retained. [Full credits](THIRD-PARTY-NOTICES.md).
+
 The primary destinations are Chat, Your work, Workspace and Campus. Workspace tools are searchable; conversation and NPC actions follow the current request, review, run or failure state. Advanced forms retain their fields across Connections, and terminal input remains until acknowledged.
 
 ## Install with Prism

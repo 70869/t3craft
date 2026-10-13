@@ -2,6 +2,10 @@
 
 T3 Code inside Minecraft, with a compact chat workspace and the latest authored campus included for new players.
 
+## Credits
+
+T3Craft is a community fork of [AgentCraft by blendi-remade](https://github.com/blendi-remade/agentcraft), with its paired Java client adapted from [t3craft by Maxwell Young](https://github.com/maxwellyoung/t3craft). [T3 Code by the T3 Tools team](https://github.com/pingdotgg/t3code) owns the conversations, providers, workspaces and execution; this integration also adapts its MIT-licensed theme palettes. These projects are credited under their retained MIT licenses. Resident skins are from [Minetest Skins Pack 1 by isaiah658](https://opengameart.org/content/minetest-skins-pack-1), CC0. This is a community integration, not an official T3 Code release. [Complete notices](https://github.com/70869/t3craft/blob/main/THIRD-PARTY-NOTICES.md).
+
 ## What changed
 
 - T3 menus use a compact scale at 1080p and restore the player's world GUI scale when closed. Search and New lead the sidebar; machine/project/status filters sit behind Filter. Working and Settled have separate collapsible shelves, and the selected thread stays visible.
