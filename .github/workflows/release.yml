@@ -3,6 +3,7 @@ name: Release
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -53,6 +54,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - id: target
         shell: bash
         run: echo "java=$(sed -n 's/^java_version=//p' mod/gradle.properties)" >> "$GITHUB_OUTPUT"
@@ -68,7 +71,16 @@ jobs:
         shell: bash
         run: |
           version="$(sed -n 's/^mod_version=//p' mod/gradle.properties)"
-          test "$GITHUB_REF_NAME" = "v$version"
+          tag="v$version"
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            # Recover a failed check without rewriting an already-pushed tag.
+            # Only QA, docs and marketing may differ from its release sources.
+            git rev-parse --verify "refs/tags/$tag"
+            git diff --exit-code "$tag" HEAD -- mod release tools/package-prism.py tools/package-modrinth.py tools/install-release.ps1 tools/update-release-after-close.ps1 Install-T3Craft.cmd
+          else
+            test "$GITHUB_REF_NAME" = "$tag"
+          fi
+          echo "RELEASE_TAG=$tag" >> "$GITHUB_ENV"
           echo "RELEASE_VERSION=$version" >> "$GITHUB_ENV"
           echo "MINECRAFT_VERSION=$(sed -n 's/^minecraft_version=//p' mod/gradle.properties)" >> "$GITHUB_ENV"
       - name: Build release JAR
@@ -81,4 +93,4 @@ jobs:
       - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" "artifacts/prism/T3Craft-$RELEASE_VERSION-mc$MINECRAFT_VERSION-fabric.zip" artifacts/prism/T3Craft-Prism.zip "artifacts/prism/T3Craft-$MINECRAFT_VERSION-Native.zip" artifacts/prism/T3Craft-Windows-Installer.zip "artifacts/prism/T3Craft-$RELEASE_VERSION.mrpack" artifacts/prism/compatibility.json artifacts/prism/SHA256SUMS.txt "mod/build/libs/t3craft-$RELEASE_VERSION.jar" --title "T3Craft $RELEASE_VERSION" --notes-file "docs/RELEASE-$RELEASE_VERSION.md" --verify-tag
+        run: gh release create "$RELEASE_TAG" "artifacts/prism/T3Craft-$RELEASE_VERSION-mc$MINECRAFT_VERSION-fabric.zip" artifacts/prism/T3Craft-Prism.zip "artifacts/prism/T3Craft-$MINECRAFT_VERSION-Native.zip" artifacts/prism/T3Craft-Windows-Installer.zip "artifacts/prism/T3Craft-$RELEASE_VERSION.mrpack" artifacts/prism/compatibility.json artifacts/prism/SHA256SUMS.txt "mod/build/libs/t3craft-$RELEASE_VERSION.jar" --title "T3Craft $RELEASE_VERSION" --notes-file "docs/RELEASE-$RELEASE_VERSION.md" --verify-tag

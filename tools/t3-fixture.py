@@ -9,6 +9,7 @@ import base64
 import hashlib
 import json
 import socket
+import socketserver
 import struct
 import sys
 import threading
@@ -80,6 +81,13 @@ def projection(value):
 
 class Fixture(ThreadingHTTPServer):
     daemon_threads = True
+    def server_bind(self):
+        # This fixture is loopback-only. HTTPServer's reverse DNS lookup can stall
+        # on hosted macOS runners before either server starts accepting requests.
+        socketserver.TCPServer.server_bind(self)
+        self.server_name = 'localhost'
+        self.server_port = self.server_address[1]
+
     def handle_error(self, request, client_address):
         if isinstance(sys.exc_info()[1], (ConnectionResetError, BrokenPipeError)): return
         super().handle_error(request, client_address)
