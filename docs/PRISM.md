@@ -1,5 +1,11 @@
 # Install T3Craft with Prism Launcher
 
+## Modrinth pack
+
+The release also includes **T3Craft-1.0.1.mrpack**, importable in Modrinth App or Prism Launcher. It downloads the exact T3Craft and Fabric API versions and installs the same cleaned authored campus under `saves/AgentCraft HQ`. Use Java 25+, start T3 Code separately, open that world from Singleplayer, then pair through Connections. The pack includes no account configuration, credentials, player profiles or chat history.
+
+Back up your saves before a launcher-managed pack upgrade: launchers may replace bundled override files. For existing Prism installations, the Windows installer below is the supported flow that verifies backups and preserves every world before updating managed mods.
+
 ## Recommended: import the release ZIP on any platform
 
 **[Download T3Craft for Prism](https://github.com/70869/t3craft/releases/latest)** — Windows, macOS and Linux.

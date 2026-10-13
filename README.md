@@ -16,6 +16,8 @@ Use Prism's Java autodetection and download settings, or select Java 25+. No sou
 
 New release imports include a clean copy of the latest authored T3Craft world, preserving the campus buildings and terrain. Its [snapshot manifest](release/world-template.json) records the source save and checksums. Existing-instance updates keep their saved worlds.
 
+For Modrinth App, import **T3Craft-1.0.1.mrpack** from the release. It includes the same authored world and exact checksummed mods. Select Java 25+ and open **AgentCraft HQ** from Singleplayer. Back up saves before launcher-managed pack upgrades; use the Prism installer for the supported backup-preserving update flow.
+
 Releases built from this checkout also provide **T3Craft-Windows-Installer.zip**: extract it and double-click `Install-T3Craft.cmd` for a checksum-verified install from its bundled prebuilt package or a backed-up update. It keeps existing worlds, pairing and shaders. In a source checkout, the same launcher retains the local build/install workflow; `tools/install.ps1 -Build` builds explicitly.
 
 - [How the mod works and controls](docs/USER-GUIDE.md)

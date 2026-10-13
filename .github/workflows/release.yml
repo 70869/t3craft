@@ -38,6 +38,8 @@ jobs:
         if: runner.os == 'Windows'
       - name: Validate Prism release package
         run: python tools/package-prism.py --output-dir .local/prism-check
+      - name: Validate Modrinth pack and matching authored world
+        run: python tools/package-modrinth.py .local/prism-check/T3Craft-Prism.zip
       - name: Check package privacy and compatibility regressions
         run: python -m unittest discover -s tools -p test_release_package.py
       - name: Check installer and update recovery in disposable profiles
@@ -74,7 +76,9 @@ jobs:
         working-directory: mod
       - name: Package Prism import
         run: python3 tools/package-prism.py
+      - name: Package Modrinth import
+        run: python3 tools/package-modrinth.py artifacts/prism/T3Craft-Prism.zip
       - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" "artifacts/prism/T3Craft-$RELEASE_VERSION-mc$MINECRAFT_VERSION-fabric.zip" artifacts/prism/T3Craft-Prism.zip "artifacts/prism/T3Craft-$MINECRAFT_VERSION-Native.zip" artifacts/prism/T3Craft-Windows-Installer.zip artifacts/prism/compatibility.json artifacts/prism/SHA256SUMS.txt "mod/build/libs/t3craft-$RELEASE_VERSION.jar" --title "T3Craft $RELEASE_VERSION" --generate-notes --verify-tag
+        run: gh release create "$GITHUB_REF_NAME" "artifacts/prism/T3Craft-$RELEASE_VERSION-mc$MINECRAFT_VERSION-fabric.zip" artifacts/prism/T3Craft-Prism.zip "artifacts/prism/T3Craft-$MINECRAFT_VERSION-Native.zip" artifacts/prism/T3Craft-Windows-Installer.zip "artifacts/prism/T3Craft-$RELEASE_VERSION.mrpack" artifacts/prism/compatibility.json artifacts/prism/SHA256SUMS.txt "mod/build/libs/t3craft-$RELEASE_VERSION.jar" --title "T3Craft $RELEASE_VERSION" --notes-file "docs/RELEASE-$RELEASE_VERSION.md" --verify-tag

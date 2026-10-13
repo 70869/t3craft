@@ -17,10 +17,12 @@ Minecraft 26.3, Fabric Loader 0.19.5, Fabric API 0.161.0+26.3 and Java 25+. The 
 
 ## Included world
 
-The cleaned snapshot comes from the author's native save at **2026-10-12 23:44:10 UTC**: modern layout revision **9**, **11,055 chunks**. It preserves the authored buildings, terrain, signs, stations and saved layout. Every fresh Prism import and standalone installation uses this same snapshot. [The manifest](../release/world-template.json) records its provenance and hashes; release preparation refuses a stale capture.
+The cleaned snapshot comes from the author's native save at **2026-10-13 08:38:29 UTC**: modern layout revision **9**, **11,055 chunks**. It preserves the authored buildings, terrain, signs, stations and saved layout. Every fresh Prism import, Modrinth pack import and standalone installation uses this same snapshot. [The manifest](https://github.com/70869/t3craft/blob/v1.0.1/release/world-template.json) records its provenance and hashes; release preparation refuses a stale capture.
 
 ## Verification
 
 The Windows Java 25 build, authored-world work-floor check, native menu/navigation/theme checks, sidebar click and scale checks, resident animation and crowd checks, paired protocols 1/2, twelve package regressions, eight Node tests and disposable installer recovery checks passed. Mutating T3 checks use synthetic environments. Native macOS/Linux gameplay, additional shader combinations and real remote writes remain outside this verification.
 
-See [installation and recovery](PRISM.md), [controls](USER-GUIDE.md) and [integration evidence](T3-INTEGRATION.md).
+**T3Craft-1.0.1.mrpack** can be imported in Modrinth App or Prism Launcher. It includes the same cleaned authored world and downloads the exact checksummed T3Craft and Fabric API versions. Use Java 25+ and open **AgentCraft HQ** from Singleplayer. Back up your world before launcher-managed pack upgrades; the Prism installer is the supported backup-preserving update path.
+
+See [installation and recovery](https://github.com/70869/t3craft/blob/v1.0.1/docs/PRISM.md), [controls](https://github.com/70869/t3craft/blob/v1.0.1/docs/USER-GUIDE.md) and [integration evidence](https://github.com/70869/t3craft/blob/v1.0.1/docs/T3-INTEGRATION.md).

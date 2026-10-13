@@ -189,7 +189,7 @@ MaxMemAlloc=4096
              f"WORLD: Includes the clean authored campus saved {world['sourceSavedAt']} (layout revision {world['layoutRevision']}).\n"
              "UPDATE: Close Minecraft and back up your existing instance. Keep its worlds and settings; replace only the mod and Fabric API.\n"
              "Do not import over an existing instance or downgrade a saved world to another Minecraft version.\n"
-             f"Install and recovery guide: {REPOSITORY}/blob/t3craft/docs/PRISM.md\n")
+             f"Install and recovery guide: {REPOSITORY}/blob/v{version}/docs/PRISM.md\n")
     output_dir.mkdir(parents=True, exist_ok=True)
     output = output_dir / f"T3Craft-{version}-mc{minecraft}-fabric.zip"
     with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as archive:

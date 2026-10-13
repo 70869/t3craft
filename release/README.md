@@ -13,3 +13,5 @@ python tools/package-prism.py --verify-world-source "$save"
 Select the configured Java toolchain and isolated Gradle home as described in [developer checks](../tools/README.md). For a custom Prism profile, pass its actual closed save directory. Include both snapshot files with the release's source changes. `--verify-world-source` refuses packaging if the authored save has changed after capture. CI validates the committed snapshot without accessing the author's profile.
 
 New Prism imports and new Windows installations receive this world. Updates to an existing instance replace only the managed mods and keep its saved worlds unchanged. Loading the template uses its saved anchors, so first launch does not rebuild the authored campus.
+
+`python tools/package-modrinth.py artifacts/prism/T3Craft-Prism.zip` creates a Modrinth pack from the validated Prism release. Its client overrides contain this same world byte for byte. Modrinth launchers manage their own updates; back up saves before upgrading a pack that bundles a world.

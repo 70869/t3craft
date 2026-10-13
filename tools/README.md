@@ -4,6 +4,8 @@ Playing needs the native Fabric mod and T3 Code. Node/Python below are optional 
 
 ## Install and package
 
+After creating a verified Prism release with `python tools/package-prism.py`, run `python tools/package-modrinth.py artifacts/prism/T3Craft-Prism.zip`. This creates the Modrinth `.mrpack`, resolves Fabric API by its exact SHA-512 on Modrinth, checks its Minecraft target, copies the validated authored world byte for byte, and adds the pack to `SHA256SUMS.txt`. T3Craft downloads from the matching GitHub release tag; publish that release before submitting the pack. The pack contains no installed-profile settings or pairing data.
+
 ```powershell
 .\tools\install.ps1 -Launch
 .\tools\install.ps1 -Build
