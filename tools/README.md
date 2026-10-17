@@ -1,8 +1,8 @@
-# T3Craft tools
+# T3Craft tools: backstage, with the lights on
 
-Playing needs the native Fabric mod and T3 Code. Node/Python below are optional developer dependencies.
+Playing needs the native Fabric mod and T3 Code. The scripts below are backstage equipment for building, packaging and checking the show; Node and Python are optional developer dependencies.
 
-## Install and package
+## Package the release
 
 After creating a verified Prism release with `python tools/package-prism.py`, run `python tools/package-modrinth.py artifacts/prism/T3Craft-Prism.zip`. This creates the Modrinth `.mrpack`, resolves Fabric API by its exact SHA-512 on Modrinth, checks its Minecraft target, copies the validated authored world byte for byte, and adds the pack to `SHA256SUMS.txt`. T3Craft downloads from the matching GitHub release tag; publish that release before submitting the pack. The pack contains no installed-profile settings or pairing data.
 
@@ -23,7 +23,7 @@ For an explicit campus upgrade, `tools/update-hq.ps1 -Launch` backs up every wor
 
 `pair-t3.ps1` uses the installed T3 desktop pairing CLI, or accepts `-PairingLink`. It writes a private instance configuration, preserves existing config fields and prints no credentials. Prefer the game's Connections screen for manual pairing.
 
-## Build and checks
+## Build it; check the wiring
 
 Use a Java 25 JDK. This checkout's optional local JDK can be selected without changing system Java:
 
@@ -63,7 +63,7 @@ npm --prefix tools ci
 npm --prefix tools test
 ```
 
-## Development game inspection
+## Inspect the live set
 
 `mod/DEV.md` documents Fabric development-client and opt-in DevBridge controls. Set `T3CRAFT_CONFIG` to a paired development config; default Minecraft config remains `config/t3craft.json`. Keep private configs under ignored paths.
 
@@ -103,7 +103,7 @@ The old stop/process-run helpers have been removed. Quit an installed game norma
 
 `node tools/t3-sidebar-qa.mjs <devPort> <fixturePort>` checks menu/world scale transitions, exact native Working/Settled row clicks, collapse/expand, visible focus, retained Back scope and no implicit writes. It uses the synthetic fixture's `/_qa/shelves` scenario; the guarded menu hook accepts `clickAt` only with fixture credentials. `t3-animation-qa.mjs` also checks actual rendered snack, phone and developer idle motion after the synthetic `/_qa/leisure` completion scenario.
 
-## Release and compatibility checks
+## Release checks and compatibility
 
 Release packages use the checked-in clean authored world under [`release/`](../release/README.md). Before preparing a release tag, save and close the latest native world, run `worldTemplateExport -PworldSource=<absolute-save-directory>`, and package with `--verify-world-source <save-directory>`. This verifies the current source against the captured template and refuses a stale export. Include the ZIP and manifest in the release's source changes. The exporter holds Minecraft's world lock, keeps authored blocks/signs/terrain and saved anchors, removes personal data, and leaves the source unchanged. Fresh installs receive the template; updates retain existing worlds. CI packages the same committed template on all platforms.
 

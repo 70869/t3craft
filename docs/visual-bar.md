@@ -1,4 +1,4 @@
-# T3Craft visual review
+# T3Craft visual review: make the frame count
 
 T3Craft should read as a finished Minecraft workspace: a calm modern campus, recognizable residents,
 and useful T3 state that can be understood in a few seconds. Inspect the actual game; a compile or

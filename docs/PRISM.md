@@ -1,12 +1,14 @@
-# Install T3Craft with Prism Launcher
+# Put T3Craft in Prism Launcher
 
-## Modrinth pack
+One clean import gets the campus on screen. T3 Code stays on your machine; the Minecraft client pairs with it when you are ready.
+
+## The Modrinth route
 
 The release also includes **T3Craft-1.0.1.mrpack**, importable in Modrinth App or Prism Launcher. It downloads the exact T3Craft and Fabric API versions and installs the same cleaned authored campus under `saves/AgentCraft HQ`. Use Java 25+, start T3 Code separately, open that world from Singleplayer, then pair through Connections. The pack includes no account configuration, credentials, player profiles or chat history.
 
 Back up your saves before a launcher-managed pack upgrade: launchers may replace bundled override files. For existing Prism installations, the Windows installer below is the supported flow that verifies backups and preserves every world before updating managed mods.
 
-## Recommended: import the release ZIP on any platform
+## The recommended route: import the release ZIP
 
 **[Download T3Craft for Prism](https://github.com/70869/t3craft/releases/latest)** — Windows, macOS and Linux.
 
@@ -18,7 +20,7 @@ No source checkout, Python, Gradle or Node is needed. The package contains Minec
 
 Releases produced by this checkout also include a version-labeled ZIP, `compatibility.json`, and `SHA256SUMS.txt`. They describe the exact Minecraft/Fabric target and hashes of the bundled files. Use a separate instance for a different Minecraft version; never downgrade an existing saved world to make a JAR load.
 
-## Optional Windows installer
+## Windows installer: the backed-up route
 
 Releases produced by this checkout provide **T3Craft-Windows-Installer.zip**. Extract the ZIP and double-click `Install-T3Craft.cmd`. The installer contains the same prebuilt Prism package and latest authored world as the release. It verifies the bundled SHA-256 before creating the dedicated instance using Prism's Java setup. Minecraft and Java may still need downloads through Prism. It does not compile sources or issue a T3 pairing grant; pair privately in the game.
 
@@ -64,7 +66,7 @@ Use the recommended import above. Prism stores instances in its configured insta
 
 The import ZIP includes T3Craft and Fabric API. Prism can manage the Java runtime; if you select one manually, use Java 25 or newer. Keep T3 Code running, open Connections in Minecraft, and pair with a link from T3 Settings → Connections. The Windows-only `.cmd` installer is not used on macOS or Linux.
 
-## Compatibility
+## The compatibility card
 
 | Component | This build |
 | --- | --- |
@@ -77,7 +79,7 @@ The import ZIP includes T3Craft and Fabric API. Prism can manage the Java runtim
 
 Existing Minecraft 1.21.x Fabric instances and ATM10/NeoForge cannot load this JAR. Use the separate instance. The internal mod ID is `agentcraft`; install only one AgentCraft/T3Craft JAR in an instance.
 
-## Importable ZIP
+## Inside the ZIP
 
 The cross-platform release packager creates **`artifacts/prism/T3Craft-Prism.zip`**, a version-labeled ZIP and the legacy **`T3Craft-26.3-Native.zip`** alias. The source Windows installer creates the legacy import ZIP.
 
@@ -85,7 +87,7 @@ In Prism use **Add Instance → Import**, select that ZIP, and finish the import
 
 Prism references: [creating an instance](https://prismlauncher.org/wiki/getting-started/creating-an-instance/), [installing mods](https://prismlauncher.org/wiki/getting-started/download-mods/), and [Java setup](https://prismlauncher.org/wiki/getting-started/installing-java/).
 
-## Update the mod without rebuilding the campus
+## Update the mod; keep the campus
 
 Run `tools/update-hq.ps1 -ModOnly` with Minecraft closed. It verifies a complete HQ backup, backs up the old mod, and installs the current build while preserving pairing, settings and shaders. `-ModOnly -WhatIf` previews the update. The normal updater still queues the campus upgrade; use `-ModOnly` for interface and workflow updates.
 
@@ -111,7 +113,7 @@ node tools/detect-minecraft.mjs --root 'D:\Games\PrismLauncher'
 
 The detector does not read account credentials. Its output is ignored by Git.
 
-## Troubleshooting
+## When launch day gets weird
 
 **Microsoft session expired:** Reauthenticate in Prism → Settings → Accounts, then launch again.
 

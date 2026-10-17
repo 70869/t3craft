@@ -1,4 +1,4 @@
-# T3Craft 1.0.1
+# T3Craft 1.0.1: the campus is open
 
 T3 Code inside Minecraft, with a compact chat workspace and the latest authored campus included for new players.
 

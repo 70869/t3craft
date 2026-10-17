@@ -4,13 +4,13 @@
 
 *Promotional artwork; [actual in-game screenshots](assets-src/marketing) are included separately.*
 
-Your T3 Code workspace inside a modern Minecraft campus office. The native Fabric mod connects directly to paired T3 Code machines. T3 owns the chats, providers, workspaces and execution.
+Your T3 Code workspace has walked through the blocky front door. The campus is the stage; your paired T3 machines are the crew running the show. T3 owns the chats, providers, workspaces and execution. Minecraft puts the work where you can see it.
 
 A community fork of [AgentCraft by blendi-remade](https://github.com/blendi-remade/agentcraft), with the paired client adapted from [t3craft by Maxwell Young](https://github.com/maxwellyoung/t3craft), and powered by [T3 Code by the T3 Tools team](https://github.com/pingdotgg/t3code). Original MIT attribution and licenses are retained. [Full credits](THIRD-PARTY-NOTICES.md).
 
 The primary destinations are Chat, Your work, Workspace and Campus. Workspace tools are searchable; conversation and NPC actions follow the current request, review, run or failure state. Advanced forms retain their fields across Connections, and terminal input remains until acknowledged.
 
-## Install with Prism
+## Get in the game
 
 **[Download T3Craft for Prism](https://github.com/70869/t3craft/releases/latest)** — Windows, macOS and Linux.
 
@@ -32,7 +32,7 @@ Releases built from this checkout also provide **T3Craft-Windows-Installer.zip**
 - [Removed and remaining bloat](docs/BLOAT.md)
 - [Developer checks](tools/README.md)
 
-## History and new chats
+## The work has a history
 
 The sidebar reads existing unarchived chats from your paired T3 environments. Selecting one loads its actual conversation; **Workspace → History → Load older** pages its saved timeline. No provider history folders, simulated chats or independent mod chat database are used.
 
@@ -44,7 +44,7 @@ Right-click a resident for **Chat**, **Runs**, **Workspace** and **Desk** contro
 
 **Your work** groups waiting requests, active runs, assigned desks, recent chats and failures, with the next action beside each conversation. The compact sidebar puts Search and New at the top, keeps scope controls behind Filter, and shows collapsible Working and Settled shelves from T3 state. **Ctrl+Tab** switches chats. T3 menus use a denser scale than the world HUD and restore the player's GUI preference when closed. A **Getting started** guide walks through pairing, selecting a chat, pinning a desk and composing a reply. Residents advertise requests, ready reviews and failures; at most two waiting residents approach while the rest wait at their desks. Commands have a distinct watching pose, and ready reviews keep their resident at its monitor.
 
-## Compatibility
+## Know the setup
 
 Minecraft **26.3**, Fabric Loader **0.19.5**, Fabric API **0.161.0+26.3**, Java **25+**. The installed profile is separate from existing 1.21.x or NeoForge packs.
 
@@ -52,9 +52,9 @@ The Fabric mod and Prism import target Windows, macOS, and Linux. GitHub Actions
 
 The internal mod ID remains `agentcraft` for existing assets and worlds. Install one AgentCraft/T3Craft JAR per instance.
 
-## Status and attribution
+## The receipts
 
-The 1.0.1 release candidate has been checked in an isolated Windows Minecraft 26.3 client with Java 25 and synthetic T3 pairings. Checks cover compact menus, navigation, all theme variants and eighteen community skins, paired protocols 1/2, package privacy, and installation/update recovery. The dated [integration checks](docs/T3-INTEGRATION.md) distinguish those results from earlier native-profile and live T3 checks. Native macOS/Linux launches and additional shader combinations still need game verification.
+The 1.0.1 release candidate has been checked in an isolated Windows Minecraft 26.3 client with Java 25 and synthetic T3 pairings. Checks cover compact menus, navigation, all theme variants and eighteen community skins, paired protocols 1/2, package privacy, and installation/update recovery. The dated [integration checks](docs/T3-INTEGRATION.md) separate those receipts from earlier native-profile and live T3 checks. Native macOS/Linux launches and additional shader combinations still need game verification. The credits matter; the receipts matter too.
 
 **T3Craft Settings → Characters** offers 18 creator-made looks from a CC0 skin pack. All resident slots use these skins; legacy Original preferences migrate to the new defaults. **Resident cast → Show all 18** keeps the full cast visible without creating chats. Newly generated campuses have eighteen main-floor desks. Older authored campuses reuse existing main-floor meeting and lounge seats for former upstairs worker assignments, preserving the saved blocks and anchors. Residents follow nearby moved or rotated chairs, leave obstructed seats and replan when blocks interrupt their route. A pixel-art T3 wordmark sits above the front entrance.
 

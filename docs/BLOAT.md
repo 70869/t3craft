@@ -1,5 +1,7 @@
 # Bloat audit
 
+Every subsystem has to earn its place. This audit records what stayed, what left, and why the shipped client does not need a second engine backstage.
+
 ## Removed
 
 The old `foreman/` backend (67 tracked files) was removed, including the Claude SDK execution path, simulator, agent scheduler, separate chat/memory store, notifications, repository orchestration and its obsolete tests/dependencies. The interim MCP adapter and fake sandbox/demo generator were removed too.

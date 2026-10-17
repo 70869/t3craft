@@ -1,8 +1,8 @@
 # Using T3Craft
 
-T3Craft makes your existing T3 Code chats visible and actionable inside Minecraft. The HQ is a view of T3's state: chat messages, working agents, questions, approvals and completed changes come from your paired T3 machines.
+T3Craft brings your existing T3 Code chats into Minecraft and gives them room to breathe. The HQ is a window into T3's state: chat messages, working agents, questions, approvals and completed changes come from your paired T3 machines. The campus shows the work; T3 remains in charge of it.
 
-## First launch
+## First launch: open the doors
 
 Download the recommended Prism import ZIP from the [latest release](https://github.com/70869/t3craft/releases/latest). In Prism choose **Add Instance → Import**, select the ZIP, sign into your Minecraft account, and launch **T3Craft 26.3 Native** with T3 Code running. The first install needs internet for Minecraft, Fabric and the Java runtime. Source builds are optional. [The installation guide](PRISM.md) covers the Windows installer and updating an existing instance.
 
@@ -14,13 +14,13 @@ Keep T3 Code running. The Minecraft Microsoft login and T3 pairing are separate.
 
 The first panel opening after pairing offers **Getting started**: connect a machine, choose an existing conversation, pin its desk, and open its composer. Each step is an explicit control; the guide sends only when you choose Send in the composer. Reopen it from **Your work → Getting started**, **Settings → General**, or `/t3 guide`.
 
-## Menu scale and sidebar
+## Find your footing: menu scale and sidebar
 
 T3 menus use a compact desktop layout independently of Minecraft's saved GUI scale. At 1920×1080, GUI settings 2, 3 and 4 all render T3 menus at scale 2; closing the menu restores the world HUD's chosen scale. Smaller windows adapt to the available space.
 
 Search and New sit at the top of the sidebar. **Filter** reveals machine, project and status controls; click a scope to cycle it. **Working** and **Settled** have separate collapsible shelves and scroll independently. Settled follows T3's explicit settled state; finishing a run alone does not settle a chat. Searches include every shelf, and selecting a thread brings its row into view. The selected row has an accent marker, while state colors distinguish working, waiting, failed, done and idle chats.
 
-## Everyday use
+## Your controls
 
 | Action | Control |
 | --- | --- |
@@ -42,7 +42,7 @@ Search and New sit at the top of the sidebar. **Filter** reveals machine, projec
 
 Rebind the panel and Decisions keys in Minecraft's Controls if another mod uses them. Escape closes a panel and preserves its unsent draft across game restarts.
 
-## Your existing chat history
+## The history is real
 
 Use the sidebar to choose a chat. Scroll its list and use the machine and project filters to find the right conversation. The status filter cycles **All chats**, **Needs you**, **Active runs**, **At desks**, **Recent chats** and **Failed runs**. Search accepts chat titles, projects and machine names. Waiting requests appear first in the normal list; Recent chats follows T3's update timestamps. Search and filters are retained when you return to the same selected conversation from Workspace or Your work. Opening a different conversation from a resident clears the old filters so that chat remains reachable.
 
@@ -54,7 +54,7 @@ The sidebar includes unarchived chats. **Workspace → Archived chats** reads an
 
 Only environments that you explicitly pair supply history. Removing a machine removes its chats from this mod. T3 remains the owner of the conversation history.
 
-## Sending a reply
+## Send the next line
 
 Select an existing chat, type in the composer, and press **Enter**. The message goes to that same T3 chat, using its project, workspace, model and modes. Enter sends and returns to the world; **Shift+Enter** sends and keeps the panel open.
 
@@ -64,7 +64,7 @@ Sending keeps the draft until acknowledgment. After an uncertain delivery, the s
 
 The model picker reads enabled, ready providers and their models from the selected machine. Picking a model takes effect on the next send and updates that thread's model. Some providers require a new chat to change model; those choices are labeled accordingly and require clicking **+ New** first.
 
-## Starting a new chat deliberately
+## Start a new chat on purpose
 
 1. Select a conversation in the T3 project and workspace you want.
 2. Click **+ New** beside the chat list.
@@ -74,7 +74,7 @@ T3 creates the new conversation when you send its first message. Until then it i
 
 You can also use `/t3 new <message>` after choosing a project through a chat. Opening the game, pairing, viewing history, clicking an NPC and pinning a desk never start chats automatically.
 
-## The studio characters
+## Meet the studio characters
 
 Eighteen character slots represent up to eighteen chats. **Pause → T3Craft Settings → Characters** offers eighteen creator-made looks from the CC0 Minetest Skins Pack 1, with matching portraits and wide arm models. Legacy Original preferences use the new defaults. Changing a look preserves its desk, linked chat and custom name.
 
@@ -136,7 +136,7 @@ The physical review cards advertise checkpoints already fetched for resident cha
 
 The wall keeps readable full-size cards with up to three title lines and a project label. Lane counts include every chat across that lane's pages; recent chats appear first. Failed chats use red cards in **Needs you**, with their actual error shown. For faster browsing, right-click an empty wall area to open the board screen, or use the searchable library. Very long titles are shortened on the physical card; opening the card shows more of the title.
 
-## Questions, approvals and activity
+## Questions, approvals and all the waiting
 
 A waiting chat displays the actual T3 request. Approvals expose **Yes** and **No**. Questions support suggested answers, free text when allowed, multiple choices, and multi-question requests. The answer is routed to the request's own chat and machine even if you select another chat before submitting it.
 
@@ -188,7 +188,7 @@ If this machine was paired with an earlier build, create a fresh T3 Settings →
 
 The modern HQ is an island campus with wooded ridges, rocky headlands, sheltered coves and sandy southern beaches. Follow the winding gravel trails from the gardens into the woodland and along the shore. Shallow coastal shelves descend into deeper ocean. The glass office has three occupied levels linked through a separate stair hall, eighteen desks, meeting rooms, a coffee lounge, terraces and gardens. New worlds generate ocean outside the island; existing HQ worlds gain the coastal terrain as chunks load. On Windows, close Minecraft and double-click `Update-T3Craft.cmd` to back up your installed world, update the mod and upgrade the HQ automatically on next launch. The script prints the verified backup directory and preserves shaders, options and pairing. You can also run `/agentcraft hq modern` in-game. The builder preserves changes recorded against the previous HQ plan; `force` resets those changes. `/agentcraft hq studio` selects the original building style.
 
-## Reconnect, update and remove
+## Reconnect, update and pack it up
 
 Connections shows each paired machine's health and lets you retry, replace a pairing, or remove it. An offline machine's cached display can remain visible with an offline state; its write controls require reconnection. A healthy second machine remains usable.
 
@@ -196,4 +196,4 @@ Close the native Minecraft instance before updating, then rerun `Install-T3Craft
 
 Removing a machine from Minecraft forgets its local credentials. To revoke access at the server too, remove its **Minecraft** or **T3Craft** connection in T3 Settings → Connections. Keep `config/t3craft.json` private; it is not part of the import ZIP or Git checkout.
 
-See [Prism troubleshooting](PRISM.md#troubleshooting) for login, Java and shared-library lock problems.
+See [Prism troubleshooting](PRISM.md#when-launch-day-gets-weird) for login, Java and shared-library lock problems.

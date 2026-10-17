@@ -1,5 +1,7 @@
 # Native T3 Code integration
 
+Minecraft is the window. Your paired T3 machine is the authority. This guide maps that connection and separates checks we actually ran from work still waiting for a live machine or another operating system.
+
 ## Sources and transport
 
 Official repository: **[pingdotgg/t3code](https://github.com/pingdotgg/t3code)**.
@@ -151,7 +153,7 @@ Read-only wall QA in the development game retained all 150 real chats and traver
 
 See [developer commands](../tools/README.md) and [the user guide](USER-GUIDE.md).
 
-On 2026-10-12, the 1.0.1 release preparation captured the latest closed native world saved at **2026-10-12 23:44:10 UTC**, modern revision 9, **11,055 chunks**. The exporter held the world lock and left its source unchanged. Fresh imports and standalone Windows installations receive this cleaned authored snapshot; existing-instance updates preserve their worlds. The standalone installer now includes the matching Prism ZIP and checksum manifest, so it does not depend on a previously published release to install this candidate.
+On 2026-10-13, the 1.0.1 release preparation captured the latest closed native world saved at **2026-10-13 08:38:29 UTC**, modern revision 9, **11,055 chunks**. The exporter held the world lock and left its source unchanged. Fresh imports and standalone Windows installations receive this cleaned authored snapshot; existing-instance updates preserve their worlds. The standalone installer now includes the matching Prism ZIP and checksum manifest, so it does not depend on a previously published release to install this candidate.
 
 The shared T3 menu scale now preserves the saved Minecraft GUI preference while using a 960×540 canvas at 1080p with settings 2/3/4. Native screen initialization, rendering, input and resize all use the same scale; closing the menu restores the world scale. The sidebar uses Search/New at the top, hidden scope controls, separate Working and Settled shelves, independent scrolling and visible selected-thread context. Settled uses the owning T3 thread's explicit settled fields rather than treating every completed run as settled. Native fixture clicks verify exact thread routing and retained Back navigation without dispatching T3 work.
 

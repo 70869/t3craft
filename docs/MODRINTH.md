@@ -1,4 +1,4 @@
-# T3Craft on Modrinth
+# T3Craft on Modrinth: pack the whole campus
 
 Publish as a **modpack** so new installations include the authored world, Fabric API and the native T3Craft mod together.
 
@@ -22,7 +22,7 @@ Modrinth prohibits AI-generated project images. The generated cover and robot ic
 
 ## Listing description
 
-Your T3 Code workspace inside a modern Minecraft campus office. T3Craft connects directly to your paired T3 Code machines: chats, workspaces, approvals and execution stay owned by T3 Code.
+Your T3 Code workspace has a campus now. T3Craft connects directly to your paired T3 Code machines: chats, workspaces, approvals and execution stay owned by T3 Code. Walk the floor, find the conversation, and see what needs your attention.
 
 ### Credits and origins
 
@@ -32,7 +32,7 @@ This project is a fork of [AgentCraft by blendi-remade](https://github.com/blend
 
 Resident skins come from [Minetest Skins Pack 1 by isaiah658](https://opengameart.org/content/minetest-skins-pack-1), released under CC0. See the [complete third-party notices](https://github.com/70869/t3craft/blob/main/THIRD-PARTY-NOTICES.md).
 
-Chat through a compact workspace sidebar, see which thread each resident represents, and recognize work states through colored indicators and typing animations. All eighteen resident work assignments stay on the main floor. Completed residents relax with snacks, phones and idle gestures.
+Chat through a compact workspace sidebar. See which thread each resident represents; catch work states through color, motion and a typing burst. All eighteen resident work assignments stay on the main floor. When the work is done, residents head for the lounge: snacks, phones, a stretch, a little room to breathe.
 
 The pack includes the author's latest cleaned campus snapshot: buildings, terrain, signs and physical stations, with private player data and account configuration removed. Every fresh install starts with this world.
 

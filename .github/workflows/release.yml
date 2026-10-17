@@ -93,4 +93,31 @@ jobs:
       - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$RELEASE_TAG" "artifacts/prism/T3Craft-$RELEASE_VERSION-mc$MINECRAFT_VERSION-fabric.zip" artifacts/prism/T3Craft-Prism.zip "artifacts/prism/T3Craft-$MINECRAFT_VERSION-Native.zip" artifacts/prism/T3Craft-Windows-Installer.zip "artifacts/prism/T3Craft-$RELEASE_VERSION.mrpack" artifacts/prism/compatibility.json artifacts/prism/SHA256SUMS.txt "mod/build/libs/t3craft-$RELEASE_VERSION.jar" --title "T3Craft $RELEASE_VERSION" --notes-file "docs/RELEASE-$RELEASE_VERSION.md" --verify-tag
+        run: |
+          set -euo pipefail
+          assets=(
+            "artifacts/prism/T3Craft-$RELEASE_VERSION-mc$MINECRAFT_VERSION-fabric.zip"
+            artifacts/prism/T3Craft-Prism.zip
+            "artifacts/prism/T3Craft-$MINECRAFT_VERSION-Native.zip"
+            artifacts/prism/T3Craft-Windows-Installer.zip
+            "artifacts/prism/T3Craft-$RELEASE_VERSION.mrpack"
+            artifacts/prism/compatibility.json
+            artifacts/prism/SHA256SUMS.txt
+            "mod/build/libs/t3craft-$RELEASE_VERSION.jar"
+          )
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            existing_assets="$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')"
+            missing_assets=()
+            for asset in "${assets[@]}"; do
+              name="${asset##*/}"
+              if ! grep -Fxq -- "$name" <<<"$existing_assets"; then
+                missing_assets+=("$asset")
+              fi
+            done
+            if ((${#missing_assets[@]})); then
+              gh release upload "$RELEASE_TAG" "${missing_assets[@]}"
+            fi
+            gh release edit "$RELEASE_TAG" --title "T3Craft $RELEASE_VERSION" --notes-file "docs/RELEASE-$RELEASE_VERSION.md"
+          else
+            gh release create "$RELEASE_TAG" "${assets[@]}" --title "T3Craft $RELEASE_VERSION" --notes-file "docs/RELEASE-$RELEASE_VERSION.md" --verify-tag
+          fi
