@@ -1,72 +1,31 @@
 # T3Craft
 
-![T3Craft promotional cover](assets-src/marketing/t3craft-cover-1.0.1.png)
+![T3Craft HQ in Minecraft](assets-src/marketing/t3craft-hq-screenshot.jpg)
 
-*Promotional artwork; [actual in-game screenshots](assets-src/marketing) are included separately.*
+T3Craft brings your paired [T3 Code](https://github.com/pingdotgg/t3code) conversations into a Minecraft campus. T3 Code owns chats, workspaces, and execution; Minecraft gives you a place to see and interact with that work.
 
-Your T3 Code workspace has walked through the blocky front door. The campus is the stage; your paired T3 machines are the crew running the show. T3 owns the chats, providers, workspaces and execution. Minecraft puts the work where you can see it.
+## Install
 
-A community fork of [AgentCraft by blendi-remade](https://github.com/blendi-remade/agentcraft), with the paired client adapted from [t3craft by Maxwell Young](https://github.com/maxwellyoung/t3craft), and powered by [T3 Code by the T3 Tools team](https://github.com/pingdotgg/t3code). Original MIT attribution and licenses are retained. [Full credits](THIRD-PARTY-NOTICES.md).
+**[Download the latest release](https://github.com/70869/t3craft/releases/latest).**
 
-The primary destinations are Chat, Your work, Workspace and Campus. Workspace tools are searchable; conversation and NPC actions follow the current request, review, run or failure state. Advanced forms retain their fields across Connections, and terminal input remains until acknowledged.
+1. Install [Prism Launcher](https://prismlauncher.org/download/) and sign in to your Minecraft account.
+2. In Prism, choose **Add Instance → Import** and select `T3Craft-Prism.zip` from the release.
+3. Start T3 Code, launch the new Minecraft instance, then pair it from **T3 Settings → Connections** when Connections opens.
 
-## Get in the game
+Use Java 25 or newer. The release also includes a Windows installer and a Modrinth import. See [Prism setup and recovery](docs/PRISM.md) for installation details.
 
-**[Download T3Craft for Prism](https://github.com/70869/t3craft/releases/latest)** — Windows, macOS and Linux.
+## What’s inside
 
-1. Install [Prism Launcher](https://prismlauncher.org/download/) and sign into your Minecraft account.
-2. Download **T3Craft-Prism.zip** from the release. In Prism choose **Add Instance → Import** and select it. Older releases use the name **T3Craft-26.3-Native.zip**.
-3. Launch the new instance with T3 Code running. On the first unpaired world entry, Connections opens automatically: paste a fresh link from **T3 Settings → Connections**.
+- Browse and use real T3 Code chats, requests, runs, workspaces, and delegated tasks.
+- See activity represented by residents, stations, monitors, and the campus task board.
+- Keep pairing, preferences, and drafts in Minecraft while T3 Code remains the source of truth for conversations and execution.
 
-Use Prism's Java autodetection and download settings, or select Java 25+. No source checkout, Gradle, Node or separate AI account is needed to play. [Installation and recovery](docs/PRISM.md) covers launcher packages without automatic Java downloads.
+Open the [user guide](docs/USER-GUIDE.md) for controls and features. Developers can start with [T3 integration](docs/T3-INTEGRATION.md), [developer checks](tools/README.md), and the [bloat audit](docs/BLOAT.md).
 
-New release imports include a clean copy of the latest authored T3Craft world, preserving the campus buildings and terrain. Its [snapshot manifest](release/world-template.json) records the source save and checksums. Existing-instance updates keep their saved worlds.
+## Requirements and status
 
-For Modrinth App, import **T3Craft-1.0.1.mrpack** from the release. It includes the same authored world and exact checksummed mods. Select Java 25+ and open **AgentCraft HQ** from Singleplayer. Back up saves before launcher-managed pack upgrades; use the Prism installer for the supported backup-preserving update flow.
+Minecraft 26.3, Fabric Loader 0.19.5, Fabric API 0.161.0+26.3, and Java 25 or newer. Packages target Windows, macOS, and Linux. Automated builds cover all three; the game has been launched on Windows. Native macOS and Linux launches still need verification.
 
-Releases built from this checkout also provide **T3Craft-Windows-Installer.zip**: extract it and double-click `Install-T3Craft.cmd` for a checksum-verified install from its bundled prebuilt package or a backed-up update. It keeps existing worlds, pairing and shaders. In a source checkout, the same launcher retains the local build/install workflow; `tools/install.ps1 -Build` builds explicitly.
+## Credits
 
-- [How the mod works and controls](docs/USER-GUIDE.md)
-- [Prism setup, ZIP import and troubleshooting](docs/PRISM.md)
-- [Integration architecture and feature coverage](docs/T3-INTEGRATION.md)
-- [Removed and remaining bloat](docs/BLOAT.md)
-- [Developer checks](tools/README.md)
-
-## The work has a history
-
-The sidebar reads existing unarchived chats from your paired T3 environments. Selecting one loads its actual conversation; **Workspace → History → Load older** pages its saved timeline. No provider history folders, simulated chats or independent mod chat database are used.
-
-Replies go to the selected T3 chat. **+ New** starts an unsent draft initialized from the selected conversation's project, checkout and modes. Send its first message to create the chat, or open **Workspace** while preparing it to choose a different project/model/checkout before **Create chat**. Merely opening Minecraft, pairing, choosing a chat or pinning a desk creates nothing.
-
-Eighteen resident slots represent selected chats on the main floor, with saved desk assignments, visible state colors, animated typing, waiting approach and completion effects. Settled residents move to the lounge for staggered stretch, snack, phone and relaxed developer idle gestures. They reserve separate destinations, keep body space and yield or retreat around crowded crossings using the saved world's floor geometry. The task board, history library and Decisions desk include chats beyond those desks. Monitors show each resident's own T3 conversation, and checkpoint stations open T3 change review. [The guide](docs/USER-GUIDE.md#the-t3-stations) maps every interactive studio feature to its T3 variant.
-
-Right-click a resident for **Chat**, **Runs**, **Workspace** and **Desk** controls: reply/steer/stop, questions and approvals, queues, delegated tasks, schedules, changes and checkout tools, plus searchable chat reassignment and pins. The menu shows the owning machine, branch/worktree and model. Current T3 receipts distinguish reading, editing, command execution, testing, review and thinking in the character's activity and posture.
-
-**Your work** groups waiting requests, active runs, assigned desks, recent chats and failures, with the next action beside each conversation. The compact sidebar puts Search and New at the top, keeps scope controls behind Filter, and shows collapsible Working and Settled shelves from T3 state. **Ctrl+Tab** switches chats. T3 menus use a denser scale than the world HUD and restore the player's GUI preference when closed. A **Getting started** guide walks through pairing, selecting a chat, pinning a desk and composing a reply. Residents advertise requests, ready reviews and failures; at most two waiting residents approach while the rest wait at their desks. Commands have a distinct watching pose, and ready reviews keep their resident at its monitor.
-
-## Know the setup
-
-Minecraft **26.3**, Fabric Loader **0.19.5**, Fabric API **0.161.0+26.3**, Java **25+**. The installed profile is separate from existing 1.21.x or NeoForge packs.
-
-The Fabric mod and Prism import target Windows, macOS, and Linux. GitHub Actions builds and validates the package on all three operating systems and checks protocols 1 and 2 against disposable fixtures. Windows also exercises installation, all-world backups and preservation of settings in synthetic profiles. The game has been launched on Windows; macOS and Linux still need native in-game launch verification.
-
-The internal mod ID remains `agentcraft` for existing assets and worlds. Install one AgentCraft/T3Craft JAR per instance.
-
-## The receipts
-
-The 1.0.1 release candidate has been checked in an isolated Windows Minecraft 26.3 client with Java 25 and synthetic T3 pairings. Checks cover compact menus, navigation, all theme variants and eighteen community skins, paired protocols 1/2, package privacy, and installation/update recovery. The dated [integration checks](docs/T3-INTEGRATION.md) separate those receipts from earlier native-profile and live T3 checks. Native macOS/Linux launches and additional shader combinations still need game verification. The credits matter; the receipts matter too.
-
-**T3Craft Settings → Characters** offers 18 creator-made looks from a CC0 skin pack. All resident slots use these skins; legacy Original preferences migrate to the new defaults. **Resident cast → Show all 18** keeps the full cast visible without creating chats. Newly generated campuses have eighteen main-floor desks. Older authored campuses reuse existing main-floor meeting and lounge seats for former upstairs worker assignments, preserving the saved blocks and anchors. Residents follow nearby moved or rotated chairs, leave obstructed seats and replan when blocks interrupt their route. A pixel-art T3 wordmark sits above the front entrance.
-
-**T3Craft Settings → Appearance** offers T3 Code, T3 Chat, Grove, Ocean, Ember and Iris in light/dark modes, plus a saved custom accent. Chat, menus, questions, HUD, monitors, usage displays and task cards share the selected palette. **General → Display options** changes the atrium between chat overview, current status graph, recent activity and native tokens/limits. **Right-click** opens the picker for that individual monitor, including while holding an item. Display choices are saved per world. These local preferences use the pinned T3 Code built-in colors; desktop custom themes are not imported automatically.
-
-Native controls now include durable drafts, steering and queues, attachments, model options, archived chats and forks, worktree creation/handoff, an interactive shell, delegated tasks, schedules, and Git/PR operations. Open **Workspace** from Chat, or use its direct **Terminal** button and **Ctrl+`** shortcut. [Coverage and validation limits](docs/T3-INTEGRATION.md) distinguish fixture verification from live T3 testing.
-
-The HQ is a three-level glass campus on an island surrounded by ocean. A dedicated east stair hall connects the daylight work floor, upper collaboration gallery and lower archive with three-block-wide return stairs, broad landings and glass guards. Clear corridors keep circulation out of the meeting room and lounge. A wooded northwest ridge, rocky headlands, sheltered coves and southern beaches give the island varied terrain. Winding gravel trails connect the campus to its woodland and shore; underwater shelves descend into deeper ocean. The gardens include a reflecting pool, flower beds, a connected garden studio and a shaded focus garden. Press **H** for the HQ directory, including upstairs, downstairs and waterfront visits. T3 interaction menus use the selected appearance, grouped tools and **Ctrl+F** chat search. To upgrade an installed Windows world, close Minecraft and double-click **[Update-T3Craft.cmd](Update-T3Craft.cmd)**. It verifies a full world backup and installs the current build without rebuilding your campus; use the confirmed Upgrade HQ action for a campus rebuild. Surrounding chunks in existing HQ worlds gain the island terrain and ocean as they load. Shader packs, settings and T3 pairing remain in place. Recorded player changes are preserved. You can also run `/agentcraft hq modern` in-game; `/agentcraft hq studio` restores the original building style.
-
-- Original studio: [blendi-remade/agentcraft](https://github.com/blendi-remade/agentcraft), MIT.
-- Fork: [70869/t3craft](https://github.com/70869/t3craft).
-- Official T3 Code: [pingdotgg/t3code](https://github.com/pingdotgg/t3code).
-- Adapted paired client: [maxwellyoung/t3craft](https://github.com/maxwellyoung/t3craft), MIT.
-
-Original artwork and licenses are retained. See [third-party notices](THIRD-PARTY-NOTICES.md).
+T3Craft is a community fork of [AgentCraft](https://github.com/blendi-remade/agentcraft), with its paired client adapted from [t3craft](https://github.com/maxwellyoung/t3craft). T3 Code is by the [T3 Tools team](https://github.com/pingdotgg/t3code). See [third-party notices](THIRD-PARTY-NOTICES.md) for licenses and full attribution.
